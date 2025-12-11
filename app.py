@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import json
+import os
 from pathlib import Path
 from functools import lru_cache
 
@@ -14,19 +15,24 @@ country_names = {}
 # Cache for API responses
 api_cache = {}
 
+# Get the base directory
+BASE_DIR = Path(__file__).resolve().parent
+
 def load_country_codes(country_codes_path='country_codes.json'):
     """Load country code to name mapping"""
     global country_names
     try:
-        if Path(country_codes_path).exists():
-            with open(country_codes_path, 'r') as f:
+        # Use absolute path
+        full_path = BASE_DIR / country_codes_path
+        if full_path.exists():
+            with open(full_path, 'r') as f:
                 country_names = json.load(f)
-            print(f"Loaded country codes mapping for {len(country_names)} countries")
+            print(f"✓ Loaded country codes mapping for {len(country_names)} countries")
         else:
-            print("No country_codes.json found, using country codes as-is")
+            print(f"⚠ No country_codes.json found at {full_path}, using country codes as-is")
             country_names = {}
     except Exception as e:
-        print(f"Error loading country codes: {e}")
+        print(f"✗ Error loading country codes: {e}")
         country_names = {}
 
 def get_country_name(code):
@@ -36,15 +42,38 @@ def get_country_name(code):
 def load_data(nodes_path, edges_path):
     """Load CSV files into pandas dataframes"""
     global nodes_df, edges_df
-    nodes_df = pd.read_csv(nodes_path)
-    edges_df = pd.read_csv(edges_path)
     
-    # Convert year to int, handling NaN values
-    nodes_df['first_pubyear'] = pd.to_numeric(nodes_df['first_pubyear'], errors='coerce')
-    nodes_df = nodes_df.dropna(subset=['first_pubyear'])
-    nodes_df['first_pubyear'] = nodes_df['first_pubyear'].astype(int)
-    
-    print(f"Loaded {len(nodes_df)} nodes and {len(edges_df)} edges")
+    try:
+        # Use absolute paths
+        nodes_full_path = BASE_DIR / nodes_path
+        edges_full_path = BASE_DIR / edges_path
+        
+        print(f"Loading data from:")
+        print(f"  Nodes: {nodes_full_path}")
+        print(f"  Edges: {edges_full_path}")
+        
+        if not nodes_full_path.exists():
+            raise FileNotFoundError(f"Nodes file not found: {nodes_full_path}")
+        if not edges_full_path.exists():
+            raise FileNotFoundError(f"Edges file not found: {edges_full_path}")
+        
+        nodes_df = pd.read_csv(nodes_full_path)
+        edges_df = pd.read_csv(edges_full_path)
+        
+        # Convert year to int, handling NaN values
+        nodes_df['first_pubyear'] = pd.to_numeric(nodes_df['first_pubyear'], errors='coerce')
+        nodes_df = nodes_df.dropna(subset=['first_pubyear'])
+        nodes_df['first_pubyear'] = nodes_df['first_pubyear'].astype(int)
+        
+        print(f"✓ Loaded {len(nodes_df):,} nodes and {len(edges_df):,} edges")
+        return True
+        
+    except Exception as e:
+        print(f"✗ Error loading data: {e}")
+        print(f"Available files in {BASE_DIR}:")
+        for file in os.listdir(BASE_DIR):
+            print(f"  - {file}")
+        return False
 
 @app.route('/')
 def index():
@@ -63,6 +92,27 @@ def author():
 @app.route('/country')
 def page2():
     return render_template('country.html')
+
+@app.route('/debug')
+def debug():
+    """Debug endpoint to check file availability"""
+    debug_info = {
+        'base_dir': str(BASE_DIR),
+        'current_working_directory': os.getcwd(),
+        'files_in_directory': os.listdir(BASE_DIR),
+        'csv_files': [f for f in os.listdir(BASE_DIR) if f.endswith('.csv')],
+        'data_loaded': nodes_df is not None and edges_df is not None,
+        'nodes_count': len(nodes_df) if nodes_df is not None else 0,
+        'edges_count': len(edges_df) if edges_df is not None else 0,
+    }
+    
+    html = "<html><head><title>Debug Info</title><style>body{font-family:monospace;padding:20px;}</style></head><body>"
+    html += "<h1>Debug Information</h1>"
+    for key, value in debug_info.items():
+        html += f"<p><strong>{key}:</strong> {value}</p>"
+    html += "</body></html>"
+    
+    return html
 
 @app.route('/api/filters')
 def get_filters():
@@ -281,39 +331,73 @@ def get_author_details(author_id):
         'collaborators': collaborators
     })
 
-if __name__ == '__main__':
-    import sys
+# Initialize data on startup for production
+def init_app():
+    """Initialize the application with data"""
+    print("\n" + "="*60)
+    print("Research Collaboration Dashboard - Starting Up")
+    print("="*60)
     
-    if len(sys.argv) < 3:
-        print("Usage: python app.py <nodes.csv> <edges.csv> [country_codes.json]")
-        print("Example: python app.py nodes.csv edges.csv")
-        print("         python app.py nodes.csv edges.csv country_codes.json")
-        sys.exit(1)
+    # Try to load data automatically
+    nodes_file = 'coauthors_nodes.csv'
+    edges_file = 'coauthors_edges.csv'
+    country_codes_file = 'country_codes.json'
     
-    nodes_file = sys.argv[1]
-    edges_file = sys.argv[2]
-    country_codes_file = sys.argv[3] if len(sys.argv) > 3 else 'country_codes.json'
-    
-    if not Path(nodes_file).exists():
-        print(f"Error: {nodes_file} not found")
-        sys.exit(1)
-    
-    if not Path(edges_file).exists():
-        print(f"Error: {edges_file} not found")
-        sys.exit(1)
+    print(f"\nLooking for data files in: {BASE_DIR}")
+    print(f"Files available: {os.listdir(BASE_DIR)}")
     
     load_country_codes(country_codes_file)
-    load_data(nodes_file, edges_file)
+    success = load_data(nodes_file, edges_file)
     
-    print("\n" + "="*50)
-    print("Research Collaboration Dashboard")
-    print("="*50)
-    print(f"\nData loaded successfully!")
-    print(f"   Authors: {len(nodes_df):,}")
-    print(f"   Collaborations: {len(edges_df):,}")
-    print(f"\nStarting server...")
-    print(f"   Open your browser to: http://localhost:5000")
-    print(f"\nPress Ctrl+C to stop the server")
-    print("="*50 + "\n")
+    if success:
+        print(f"\n✓ Data loaded successfully!")
+        print(f"   Authors: {len(nodes_df):,}")
+        print(f"   Collaborations: {len(edges_df):,}")
+        print(f"\n✓ Server is ready!")
+    else:
+        print(f"\n⚠ Warning: Could not load data files")
+        print(f"   Make sure CSV files are in the repository root")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    print("="*60 + "\n")
+
+if __name__ == '__main__':
+    # For local development with command line arguments
+    import sys
+    
+    if len(sys.argv) >= 3:
+        # Running with arguments (local development)
+        nodes_file = sys.argv[1]
+        edges_file = sys.argv[2]
+        country_codes_file = sys.argv[3] if len(sys.argv) > 3 else 'country_codes.json'
+        
+        if not Path(nodes_file).exists():
+            print(f"Error: {nodes_file} not found")
+            sys.exit(1)
+        
+        if not Path(edges_file).exists():
+            print(f"Error: {edges_file} not found")
+            sys.exit(1)
+        
+        load_country_codes(country_codes_file)
+        load_data(nodes_file, edges_file)
+        
+        print("\n" + "="*50)
+        print("Research Collaboration Dashboard")
+        print("="*50)
+        print(f"\nData loaded successfully!")
+        print(f"   Authors: {len(nodes_df):,}")
+        print(f"   Collaborations: {len(edges_df):,}")
+        print(f"\nStarting server...")
+        print(f"   Open your browser to: http://localhost:5000")
+        print(f"\nPress Ctrl+C to stop the server")
+        print("="*50 + "\n")
+        
+        app.run(debug=True, host='0.0.0.0', port=5000)
+    else:
+        # Production mode - auto-load data
+        init_app()
+        port = int(os.environ.get('PORT', 5000))
+        app.run(debug=False, host='0.0.0.0', port=port)
+else:
+    # When running with gunicorn
+    init_app()
