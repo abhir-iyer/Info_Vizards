@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Global Research Collaborations</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --apple-bg: #ffffff;
+            --apple-bg-secondary: #f5f5f7;
+            --apple-surface: #ffffff;
+            --apple-surface-secondary: #f5f5f7;
+            --apple-text-primary: #1d1d1f;
+            --apple-text-secondary: #86868b;
+            --apple-text-tertiary: #6e6e73;
+            --apple-accent: #0071e3;
+            --apple-accent-hover: #0077ed;
+            --apple-blue: #007aff;
+            --apple-purple: #af52de;
+            --apple-pink: #ff2d55;
+            --apple-orange: #ff9500;
+            --apple-green: #34c759;
+            --apple-teal: #5ac8fa;
+            --apple-border: rgba(0, 0, 0, 0.06);
+            --apple-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            --apple-shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
+            --apple-radius: 20px;
+            --apple-radius-sm: 12px;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            background: var(--apple-bg-secondary);
+            min-height: 100vh;
+            color: var(--apple-text-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            letter-spacing: -0.01em;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 40px 60px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        
+        h1 {
+            font-size: 56px;
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            line-height: 1.07;
+            color: var(--apple-text-primary);
+            margin-bottom: 12px;
+        }
+        
+        .subtitle {
+            font-size: 21px;
+            font-weight: 400;
+            color: var(--apple-text-secondary);
+            letter-spacing: -0.01em;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 24px;
+        }
+        
+        .card {
+            background: var(--apple-surface);
+            border-radius: var(--apple-radius);
+            box-shadow: var(--apple-shadow);
+            overflow: hidden;
+            transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1), 
+                        box-shadow 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--apple-shadow-hover);
+        }
+        
+        .map-container {
+            padding: 24px;
+        }
+        
+        #choropleth-map {
+            width: 100%;
+            height: 580px;
+            border-radius: var(--apple-radius-sm);
+        }
+        
+        .network-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .network-card {
+            flex: 1;
+        }
+        
+        .network-header {
+            padding: 24px 28px 20px;
+            border-bottom: 1px solid var(--apple-border);
+        }
+        
+        .network-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--apple-text-primary);
+            letter-spacing: -0.02em;
+        }
+        
+        .network-subtitle {
+            font-size: 15px;
+            color: var(--apple-text-secondary);
+            margin-top: 4px;
+            font-weight: 400;
+        }
+        
+        .network-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 380px;
+            color: var(--apple-text-tertiary);
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .placeholder-icon {
+            width: 56px;
+            height: 56px;
+            margin-bottom: 16px;
+            opacity: 0.4;
+            stroke-width: 1;
+        }
+        
+        .placeholder-text {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--apple-text-secondary);
+            margin-bottom: 6px;
+        }
+        
+        .placeholder-hint {
+            font-size: 14px;
+            color: var(--apple-text-tertiary);
+            font-weight: 400;
+        }
+        
+        #network-svg {
+            width: 100%;
+            height: 380px;
+        }
+        
+        .node circle {
+            transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+            cursor: pointer;
+        }
+        
+        .node:hover circle {
+            filter: brightness(1.1);
+            transform: scale(1.05);
+        }
+        
+        .node.center circle {
+            filter: drop-shadow(0 4px 12px rgba(0, 122, 255, 0.3));
+        }
+        
+        .node text {
+            font-family: 'Inter', -apple-system, sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            fill: #ffffff;
+            pointer-events: none;
+            letter-spacing: 0.01em;
+        }
+        
+        .link {
+            fill: none;
+            stroke-linecap: round;
+        }
+        
+        .stats-card {
+            padding: 0;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+        
+        .stat-item {
+            padding: 18px 28px;
+            border-bottom: 1px solid var(--apple-border);
+            transition: background 0.2s ease;
+        }
+        
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-item:hover {
+            background: var(--apple-surface-secondary);
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--apple-text-secondary);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .stat-icon {
+            width: 16px;
+            height: 16px;
+            opacity: 0.6;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--apple-text-primary);
+            letter-spacing: -0.03em;
+        }
+        
+        .stat-value.accent {
+            color: var(--apple-blue);
+        }
+        
+        .legend-card {
+            padding: 20px 28px;
+        }
+        
+        .legend-title {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--apple-text-tertiary);
+            margin-bottom: 14px;
+        }
+        
+        .legend-gradient {
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, 
+                #34c759 0%, 
+                #5ac8fa 33%,
+                #af52de 66%, 
+                #ff2d55 100%
+            );
+        }
+        
+        .legend-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--apple-text-tertiary);
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: var(--apple-text-primary);
+            padding: 16px 20px;
+            border-radius: var(--apple-radius-sm);
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 1000;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--apple-border);
+            display: none;
+            max-width: 280px;
+        }
+        
+        .tooltip-title {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--apple-text-primary);
+        }
+        
+        .tooltip-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--apple-blue);
+            letter-spacing: -0.03em;
+        }
+        
+        .tooltip-label {
+            font-size: 13px;
+            color: var(--apple-text-secondary);
+            margin-top: 2px;
+            font-weight: 400;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .network-panel {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+            
+            .network-card {
+                flex: 1 1 100%;
+            }
+            
+            .stats-card, .legend-card {
+                flex: 1 1 calc(50% - 8px);
+            }
+            
+            .container {
+                padding: 30px 40px;
+            }
+            
+            h1 {
+                font-size: 44px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .network-panel {
+                flex-direction: column;
+            }
+            
+            .stats-card, .legend-card {
+                flex: 1 1 100%;
+            }
+            
+            h1 {
+                font-size: 34px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .subtitle {
+                font-size: 17px;
+            }
+        }
+
+        /* Plotly overrides for Apple light style */
+        .js-plotly-plot .plotly .modebar {
+            right: 20px !important;
+            top: 10px !important;
+        }
+        
+        .js-plotly-plot .plotly .modebar-btn {
+            color: var(--apple-text-tertiary) !important;
+        }
+        
+        .js-plotly-plot .plotly .modebar-btn:hover {
+            color: var(--apple-text-primary) !important;
+        }
+        /* Navbar Styles */
+        .navbar {
+            background: #ffffff;
+            border-bottom: 1px solid #d2d2d7;
+            padding: 0 40px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .navbar-brand {
+            font-size: 16px;
+            font-weight: 600;
+            color: #007aff;
+            text-decoration: none;
+            margin-right: 40px;
+        }
+        
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .navbar-links {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .navbar-links li {
+            display: inline-block;
+        }
+        
+        .navbar-links a {
+            color: #424245;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            display: inline-block;
+        }
+        
+        .navbar-links a:hover {
+            color: #007aff;
+            background: #f5f5f7;
+        }
+        
+        .navbar-links a.active {
+            color: #007aff;
+            font-weight: 500;
+        }
+        
+        .navbar-links a.disabled {
+            color: #d2d2d7;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .back-link {
+            color: #007aff;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        
+        .back-link:hover {
+            background: #f5f5f7;
+        }
+        
+        .back-link::before {
+            content: '← ';
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <nav class="navbar">
+        <div class="navbar-left">
+            <ul class="navbar-links">
+                <li><a href="/" >Institutions</a></li>
+                <li><a href="/author" >Authors</a></li>
+                <li><a href="/country" class="active">Country</a></li>
+                <li><a href="/images" >Temporal</a></li>
+            </ul>
+        </div>
+    </nav>
+    <br>
+        <header class="header">
+            <h1>Global Research Collaborations</h1>
+            <p class="subtitle">Explore international research partnerships across countries</p>
+        </header>
+        
+        <main class="main-content">
+            <div class="card map-container">
+                <div id="choropleth-map"></div>
+            </div>
+            
+            <div class="network-panel">
+                <div class="card network-card">
+                    <div class="network-header">
+                        <div class="network-title" id="network-title">Select a Country</div>
+                        <div class="network-subtitle" id="network-subtitle">Click on the map to explore partnerships</div>
+                    </div>
+                    <div id="network-container">
+                        <div class="network-placeholder">
+                            <svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                            </svg>
+                            <div class="placeholder-text">No country selected</div>
+                            <div class="placeholder-hint">Click any country on the map to view its collaboration network</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card stats-card" id="stats-panel" style="display: none;">
+                    <div class="stats-grid" id="stats-content">
+                    </div>
+                </div>
+                
+                <div class="card legend-card" id="legend-panel" style="display: none;">
+                    <div class="legend-title">Collaboration Intensity</div>
+                    <div class="legend-gradient"></div>
+                    <div class="legend-labels">
+                        <span>Lower</span>
+                        <span>Higher</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <script>
+        // Data
+        const choroplethData = [{"iso3": "CHN", "iso2": "CN", "name": "China", "count": 15607}, {"iso3": "USA", "iso2": "US", "name": "United States", "count": 45775}, {"iso3": "GBR", "iso2": "GB", "name": "United Kingdom", "count": 23538}, {"iso3": "CAN", "iso2": "CA", "name": "Canada", "count": 12527}, {"iso3": "DEU", "iso2": "DE", "name": "Germany", "count": 16743}, {"iso3": "AUS", "iso2": "AU", "name": "Australia", "count": 11284}, {"iso3": "ITA", "iso2": "IT", "name": "Italy", "count": 13394}, {"iso3": "FRA", "iso2": "FR", "name": "France", "count": 10896}, {"iso3": "KOR", "iso2": "KR", "name": "South Korea", "count": 4728}, {"iso3": "JPN", "iso2": "JP", "name": "Japan", "count": 5858}, {"iso3": "NLD", "iso2": "NL", "name": "Netherlands", "count": 9853}, {"iso3": "ESP", "iso2": "ES", "name": "Spain", "count": 10134}, {"iso3": "IND", "iso2": "IN", "name": "India", "count": 5065}, {"iso3": "CHE", "iso2": "CH", "name": "Switzerland", "count": 7749}, {"iso3": "BRA", "iso2": "BR", "name": "Brazil", "count": 5212}, {"iso3": "SWE", "iso2": "SE", "name": "Sweden", "count": 5881}, {"iso3": "DNK", "iso2": "DK", "name": "Denmark", "count": 4618}, {"iso3": "BEL", "iso2": "BE", "name": "Belgium", "count": 4754}, {"iso3": "TWN", "iso2": "TW", "name": "Taiwan", "count": 2179}, {"iso3": "ISR", "iso2": "IL", "name": "Israel", "count": 2160}, {"iso3": "AUT", "iso2": "AT", "name": "Austria", "count": 3730}, {"iso3": "PRT", "iso2": "PT", "name": "Portugal", "count": 3119}, {"iso3": "SGP", "iso2": "SG", "name": "Singapore", "count": 2557}, {"iso3": "TUR", "iso2": "TR", "name": "Turkey", "count": 2068}, {"iso3": "NOR", "iso2": "NO", "name": "Norway", "count": 2947}, {"iso3": "POL", "iso2": "PL", "name": "Poland", "count": 2646}, {"iso3": "IRL", "iso2": "IE", "name": "Ireland", "count": 1939}, {"iso3": "EGY", "iso2": "EG", "name": "Egypt", "count": 1762}, {"iso3": "SAU", "iso2": "SA", "name": "Saudi Arabia", "count": 2068}, {"iso3": "MEX", "iso2": "MX", "name": "Mexico", "count": 1355}, {"iso3": "GRC", "iso2": "GR", "name": "Greece", "count": 2300}, {"iso3": "RUS", "iso2": "RU", "name": "Russia", "count": 1692}, {"iso3": "FIN", "iso2": "FI", "name": "Finland", "count": 2353}, {"iso3": "ZAF", "iso2": "ZA", "name": "South Africa", "count": 1525}, {"iso3": "NZL", "iso2": "NZ", "name": "New Zealand", "count": 1306}, {"iso3": "THA", "iso2": "TH", "name": "Thailand", "count": 811}, {"iso3": "CZE", "iso2": "CZ", "name": "Czech Republic", "count": 1719}, {"iso3": "PAK", "iso2": "PK", "name": "Pakistan", "count": 1561}, {"iso3": "CHL", "iso2": "CL", "name": "Chile", "count": 1147}, {"iso3": "ARG", "iso2": "AR", "name": "Argentina", "count": 1020}, {"iso3": "COL", "iso2": "CO", "name": "Colombia", "count": 871}, {"iso3": "HUN", "iso2": "HU", "name": "Hungary", "count": 946}, {"iso3": "MYS", "iso2": "MY", "name": "Malaysia", "count": 1193}, {"iso3": "ARE", "iso2": "AE", "name": "UAE", "count": 639}, {"iso3": "NGA", "iso2": "NG", "name": "Nigeria", "count": 509}, {"iso3": "BGD", "iso2": "BD", "name": "Bangladesh", "count": 550}, {"iso3": "VNM", "iso2": "VN", "name": "Vietnam", "count": 437}, {"iso3": "SRB", "iso2": "RS", "name": "Serbia", "count": 522}, {"iso3": "SVN", "iso2": "SI", "name": "Slovenia", "count": 433}, {"iso3": "GHA", "iso2": "GH", "name": "Ghana", "count": 286}, {"iso3": "HRV", "iso2": "HR", "name": "Croatia", "count": 467}, {"iso3": "ROU", "iso2": "RO", "name": "Romania", "count": 683}, {"iso3": "CYP", "iso2": "CY", "name": "Cyprus", "count": 320}, {"iso3": "ISL", "iso2": "IS", "name": "Iceland", "count": 363}, {"iso3": "SVK", "iso2": "SK", "name": "Slovakia", "count": 417}, {"iso3": "IDN", "iso2": "ID", "name": "Indonesia", "count": 563}, {"iso3": "KEN", "iso2": "KE", "name": "Kenya", "count": 248}, {"iso3": "UKR", "iso2": "UA", "name": "Ukraine", "count": 260}, {"iso3": "PHL", "iso2": "PH", "name": "Philippines", "count": 170}, {"iso3": "LUX", "iso2": "LU", "name": "Luxembourg", "count": 249}, {"iso3": "EST", "iso2": "EE", "name": "Estonia", "count": 256}, {"iso3": "BGR", "iso2": "BG", "name": "Bulgaria", "count": 230}, {"iso3": "LTU", "iso2": "LT", "name": "Lithuania", "count": 173}, {"iso3": "LVA", "iso2": "LV", "name": "Latvia", "count": 132}, {"iso3": "MLT", "iso2": "MT", "name": "Malta", "count": 108}];
+        const collaborations = {"CN": {"US": 5963, "GB": 1079, "DE": 799, "AU": 749, "CA": 622, "TW": 592, "KR": 562, "JP": 508, "SG": 416, "IT": 380, "NL": 370, "FR": 342, "ES": 267, "SE": 222, "CH": 213, "IN": 212, "DK": 155, "BE": 148, "PK": 138, "BR": 117, "FI": 105, "AT": 90, "MY": 88, "IL": 88, "NZ": 83, "NO": 82, "SA": 75, "PT": 72, "PL": 70, "IE": 68, "RU": 61, "EG": 56, "TR": 54, "TH": 53, "CZ": 50, "IR": 48, "GR": 45, "BD": 34, "MX": 33, "NG": 28, "ID": 26, "HU": 26, "ZA": 25, "AE": 21, "NP": 20, "CL": 20, "VN": 19, "AR": 19, "RO": 18, "QA": 15, "CO": 13, "IS": 13, "PH": 13, "PE": 10, "LU": 9, "GH": 9, "RS": 8, "IQ": 8, "HR": 8, "EE": 8, "YE": 8, "GE": 7, "KE": 7, "MN": 7, "BN": 6, "TN": 6, "UA": 6, "LB": 5, "BW": 5, "SK": 5, "UZ": 5, "JO": 5, "SI": 5, "BY": 4, "LK": 4, "BG": 4, "KW": 4, "EC": 4, "ET": 4, "TZ": 3, "KG": 3, "MA": 3, "PA": 3, "LV": 3, "CY": 3, "DZ": 2, "CU": 2, "CR": 2, "CM": 2, "UY": 2, "PS": 2, "OM": 2, "NaN": 2, "MW": 2, "MK": 2, "MD": 2, "LT": 2, "ZM": 1, "VE": 1, "UG": 1, "SY": 1, "SV": 1, "SD": 1, "RW": 1, "MU": 1, "MM": 1, "ML": 1, "MC": 1, "KZ": 1, "KN": 1, "DO": 1, "BO": 1, "BH": 1, "BA": 1, "AZ": 1, "AO": 1}, "US": {"CN": 5963, "GB": 4503, "CA": 3513, "DE": 2970, "AU": 2250, "IT": 2195, "FR": 1798, "KR": 1762, "JP": 1701, "NL": 1687, "ES": 1527, "IN": 1423, "CH": 1264, "BR": 1157, "SE": 904, "DK": 727, "BE": 612, "IL": 589, "TW": 523, "AT": 484, "SG": 464, "TR": 401, "NO": 385, "PL": 378, "IE": 337, "PT": 323, "MX": 317, "IR": 309, "EG": 301, "RU": 300, "GR": 295, "FI": 293, "ZA": 241, "NZ": 240, "SA": 216, "TH": 211, "CZ": 202, "PK": 196, "AR": 186, "CL": 180, "CO": 169, "HU": 131, "PE": 111, "AE": 91, "MY": 90, "LB": 86, "NG": 80, "QA": 80, "BD": 79, "VN": 75, "RS": 57, "GH": 55, "NP": 55, "JO": 53, "RO": 49, "IS": 48, "SK": 47, "ID": 46, "GE": 44, "KE": 43, "UG": 42, "HR": 41, "SI": 39, "CY": 36, "UA": 35, "PH": 35, "UY": 35, "EC": 33, "ET": 32, "KH": 25, "TN": 24, "LU": 24, "GD": 24, "BG": 22, "LT": 21, "AZ": 21, "CR": 20, "ZM": 19, "EE": 19, "CM": 17, "KW": 17, "JM": 16, "TZ": 16, "IQ": 15, "KZ": 12, "LK": 12, "MA": 12, "MW": 11, "SY": 10, "OM": 10, "PA": 10, "BO": 10, "BY": 10, "RW": 10, "CU": 9, "LV": 9, "BW": 8, "GT": 8, "AG": 8, "PY": 8, "ZW": 8, "MT": 7, "PS": 6, "VE": 6, "TJ": 5, "MN": 5, "DO": 5, "DZ": 5, "MZ": 4, "NI": 4, "UZ": 4, "BH": 4, "AM": 4, "BB": 4, "SD": 4, "SL": 4, "BF": 4, "MK": 4, "MM": 4, "CD": 4, "GM": 4, "BJ": 4, "MD": 3, "BN": 3, "BI": 3, "KG": 3, "MU": 3, "FJ": 3, "MC": 3, "NaN": 3, "CG": 2, "LY": 2, "MG": 2, "HT": 2, "PF": 2, "PG": 2, "TT": 2, "AO": 2, "SZ": 2, "AF": 2, "SN": 2, "CI": 1, "BT": 1, "BS": 1, "GA": 1, "GL": 1, "GY": 1, "HN": 1, "JE": 1, "BA": 1, "KN": 1, "LA": 1, "LC": 1, "ML": 1, "MQ": 1, "MR": 1, "MV": 1, "NE": 1, "XK": 1, "SB": 1, "SO": 1, "SR": 1, "SS": 1, "ST": 1, "SV": 1, "SX": 1}, "GB": {"US": 4503, "AU": 1655, "DE": 1606, "IT": 1397, "CA": 1214, "NL": 1161, "CN": 1079, "FR": 1047, "ES": 971, "CH": 726, "SE": 617, "DK": 497, "BE": 462, "IN": 431, "JP": 412, "BR": 355, "IE": 334, "AT": 323, "GR": 306, "NO": 301, "PT": 267, "SG": 240, "KR": 201, "FI": 198, "ZA": 189, "TR": 177, "PL": 176, "NZ": 174, "IL": 133, "EG": 129, "SA": 125, "PK": 119, "CZ": 119, "TW": 108, "RU": 108, "IR": 91, "TH": 80, "QA": 77, "MX": 74, "MY": 72, "HU": 71, "AR": 69, "CL": 63, "NG": 58, "RO": 53, "AE": 50, "ID": 44, "JO": 41, "SI": 40, "CO": 38, "CY": 34, "BD": 32, "RS": 31, "HR": 30, "GH": 28, "VN": 25, "IS": 25, "EE": 25, "SK": 24, "LU": 24, "PE": 23, "IQ": 22, "KE": 21, "LB": 21, "UG": 19, "NP": 19, "MW": 16, "ET": 15, "BG": 14, "TZ": 13, "PH": 13, "LK": 12, "UY": 12, "ZW": 10, "OM": 10, "EC": 10, "UA": 10, "GM": 9, "BA": 8, "KW": 8, "LT": 8, "MT": 8, "MA": 7, "BO": 7, "ZM": 7, "BH": 6, "LV": 5, "MK": 5, "MN": 5, "AZ": 5, "CD": 5, "YE": 5, "JM": 4, "ML": 4, "NaN": 4, "PS": 4, "PY": 4, "SS": 4, "BB": 4, "BF": 4, "CM": 4, "BJ": 4, "KZ": 3, "FJ": 3, "KG": 3, "NE": 3, "SD": 3, "TN": 3, "DZ": 2, "BY": 2, "BW": 2, "BT": 2, "GD": 2, "GE": 2, "JE": 2, "KH": 2, "KN": 2, "LA": 2, "LY": 2, "MD": 2, "MZ": 2, "PA": 2, "RW": 2, "SN": 2, "SY": 2, "TT": 2, "XK": 2, "BN": 2, "BI": 2, "DO": 2, "CR": 2, "CG": 1, "BS": 1, "GN": 1, "GT": 1, "MU": 1, "MV": 1, "NI": 1, "PG": 1, "ST": 1, "SX": 1, "SZ": 1, "VE": 1, "AM": 1, "AL": 1, "AG": 1, "AF": 1, "CU": 1}, "CA": {"US": 3513, "GB": 1214, "AU": 682, "DE": 644, "CN": 622, "FR": 570, "IT": 440, "NL": 423, "ES": 374, "BR": 355, "CH": 338, "JP": 243, "IN": 232, "SE": 203, "KR": 174, "DK": 171, "BE": 168, "AT": 116, "NO": 112, "IL": 110, "IE": 107, "IR": 105, "NZ": 86, "SG": 82, "PT": 76, "PL": 74, "CZ": 74, "ZA": 71, "FI": 68, "MX": 67, "GR": 57, "SA": 55, "TR": 53, "PK": 51, "TW": 49, "RU": 44, "AR": 40, "EG": 40, "CL": 36, "CO": 32, "TH": 29, "PE": 27, "BD": 26, "QA": 24, "KH": 23, "AE": 21, "NG": 21, "AZ": 18, "HU": 17, "MY": 17, "LB": 16, "MA": 15, "RO": 15, "IS": 14, "VN": 12, "JO": 12, "UG": 10, "ID": 10, "OM": 10, "PH": 10, "SI": 10, "LK": 9, "GH": 9, "SK": 8, "RS": 7, "EC": 7, "JM": 7, "CY": 6, "HR": 6, "KE": 6, "KZ": 6, "UY": 6, "EE": 5, "BF": 5, "KW": 5, "LU": 5, "ZM": 5, "CU": 5, "TZ": 4, "TN": 4, "LT": 4, "IQ": 4, "GT": 4, "ET": 4, "BO": 3, "DZ": 3, "BG": 3, "BJ": 3, "MT": 3, "MK": 3, "ZW": 2, "UA": 2, "SN": 2, "PS": 2, "NP": 2, "MW": 2, "MD": 2, "BH": 2, "GP": 2, "CD": 2, "YE": 1, "VE": 1, "TT": 1, "TJ": 1, "SY": 1, "SX": 1, "SO": 1, "SD": 1, "RW": 1, "RE": 1, "PG": 1, "PF": 1, "NaN": 1, "MZ": 1, "MU": 1, "MN": 1, "MM": 1, "LV": 1, "KN": 1, "JE": 1, "HT": 1, "FJ": 1, "DO": 1, "CR": 1, "CM": 1, "CG": 1, "BW": 1, "BS": 1, "BI": 1, "BB": 1}, "DE": {"US": 2970, "GB": 1606, "CH": 998, "IT": 964, "NL": 912, "FR": 899, "CN": 799, "ES": 673, "CA": 644, "AU": 571, "AT": 564, "SE": 438, "DK": 384, "BE": 354, "JP": 292, "BR": 255, "PL": 230, "NO": 204, "PT": 193, "IL": 183, "GR": 179, "FI": 177, "IN": 152, "RU": 146, "CZ": 135, "KR": 134, "TR": 125, "HU": 116, "SG": 103, "IE": 98, "ZA": 66, "IR": 63, "CL": 61, "EG": 59, "AR": 55, "HR": 53, "TW": 51, "MX": 44, "NZ": 44, "SK": 43, "SA": 42, "RO": 36, "PK": 35, "SI": 34, "LU": 33, "QA": 29, "MY": 26, "RS": 26, "AE": 25, "UA": 24, "CO": 21, "BG": 20, "IS": 20, "LV": 20, "TH": 18, "EE": 16, "VN": 14, "NG": 14, "LB": 13, "UY": 12, "CY": 12, "BD": 11, "ID": 11, "GH": 10, "LT": 9, "EC": 7, "AM": 6, "ET": 6, "JO": 6, "TN": 6, "MD": 5, "UG": 5, "MA": 5, "CU": 5, "ZM": 5, "PE": 5, "BY": 4, "MK": 4, "SD": 4, "MT": 4, "KE": 4, "SY": 4, "BF": 4, "TZ": 4, "LK": 4, "OM": 3, "CD": 3, "RE": 3, "TJ": 3, "MZ": 3, "RW": 3, "BA": 3, "PS": 3, "IQ": 3, "MW": 3, "KH": 3, "JE": 2, "JM": 2, "KN": 2, "MC": 2, "BW": 2, "MN": 2, "NaN": 2, "CM": 2, "PY": 2, "BJ": 2, "DZ": 2, "GA": 2, "CR": 2, "GD": 1, "GE": 1, "GN": 1, "KW": 1, "KZ": 1, "MG": 1, "MU": 1, "MV": 1, "PA": 1, "PH": 1, "SB": 1, "SV": 1, "SZ": 1, "VE": 1, "XK": 1, "BI": 1, "AZ": 1, "AO": 1, "AL": 1}, "AU": {"US": 2250, "GB": 1655, "CN": 749, "CA": 682, "DE": 571, "NL": 433, "IT": 355, "FR": 305, "ES": 297, "CH": 259, "SE": 221, "NZ": 220, "DK": 220, "JP": 199, "IN": 198, "SG": 181, "BR": 180, "BE": 154, "KR": 125, "IE": 116, "ZA": 115, "AT": 108, "NO": 108, "FI": 105, "MY": 86, "IR": 83, "PT": 72, "GR": 60, "IL": 57, "TW": 57, "BD": 56, "PL": 54, "RU": 52, "CZ": 49, "TR": 46, "SA": 42, "CL": 42, "EG": 40, "VN": 36, "PK": 36, "AE": 34, "TH": 33, "ID": 33, "QA": 32, "NG": 30, "MX": 30, "LK": 23, "ET": 21, "IS": 21, "AR": 19, "GH": 18, "CO": 17, "RS": 17, "HU": 15, "EE": 13, "JO": 12, "PE": 12, "HR": 11, "BH": 10, "RO": 10, "MT": 10, "TN": 10, "KE": 10, "PH": 9, "LB": 9, "CY": 7, "SI": 7, "AZ": 6, "BJ": 6, "KW": 6, "OM": 6, "SK": 6, "MA": 5, "MC": 5, "PY": 5, "BY": 4, "TZ": 4, "NP": 4, "MM": 4, "LU": 4, "FJ": 3, "MK": 3, "BO": 3, "MW": 3, "CU": 3, "UY": 3, "UG": 3, "UA": 3, "ZM": 2, "PG": 2, "NaN": 2, "LV": 2, "KZ": 2, "KH": 2, "JM": 2, "IQ": 2, "EC": 2, "DO": 2, "CR": 2, "BG": 2, "BA": 2, "ZW": 1, "YE": 1, "VE": 1, "TT": 1, "SY": 1, "SS": 1, "SN": 1, "SB": 1, "PS": 1, "PA": 1, "MU": 1, "MN": 1, "ML": 1, "MD": 1, "LA": 1, "KG": 1, "JE": 1, "DZ": 1, "BW": 1, "BS": 1, "BF": 1, "BB": 1}, "IT": {"US": 2195, "GB": 1397, "DE": 964, "ES": 880, "FR": 873, "CH": 652, "NL": 582, "CA": 440, "CN": 380, "BE": 365, "AU": 355, "SE": 324, "BR": 288, "AT": 276, "PL": 226, "DK": 211, "GR": 197, "JP": 174, "IN": 170, "PT": 169, "NO": 160, "TR": 142, "IL": 117, "FI": 116, "CZ": 108, "IE": 90, "KR": 85, "RU": 85, "IR": 74, "SG": 72, "RS": 66, "AR": 65, "SA": 62, "EG": 59, "SI": 56, "HU": 54, "MX": 53, "RO": 51, "ZA": 42, "TW": 41, "HR": 37, "CL": 33, "MY": 31, "PK": 29, "SK": 27, "LU": 26, "PE": 24, "NZ": 23, "CO": 23, "TH": 22, "LB": 21, "BG": 20, "JO": 18, "AE": 18, "IS": 17, "UA": 17, "ID": 16, "MT": 15, "QA": 15, "AL": 15, "VN": 14, "NG": 13, "BD": 13, "MA": 12, "LV": 12, "CY": 12, "EE": 10, "TN": 9, "LT": 9, "EC": 8, "BA": 8, "KZ": 7, "UY": 6, "NE": 5, "GH": 5, "GD": 5, "KW": 4, "LK": 4, "PH": 4, "ET": 4, "CU": 4, "IQ": 3, "BH": 3, "MD": 3, "MK": 3, "MV": 3, "KE": 3, "OM": 3, "SD": 3, "KH": 2, "MC": 2, "MU": 2, "PA": 2, "PY": 2, "SS": 2, "ZW": 2, "BO": 2, "GE": 2, "AM": 2, "BF": 2, "DZ": 1, "CD": 1, "GP": 1, "BI": 1, "GT": 1, "MZ": 1, "PS": 1, "RE": 1, "RW": 1, "TJ": 1, "TT": 1, "TZ": 1, "UG": 1, "ZM": 1, "AZ": 1, "AD": 1, "CR": 1}, "FR": {"US": 1798, "GB": 1047, "DE": 899, "IT": 873, "ES": 599, "CA": 570, "CH": 512, "NL": 453, "BE": 368, "CN": 342, "AU": 305, "SE": 222, "JP": 198, "DK": 185, "BR": 184, "AT": 175, "PT": 156, "GR": 110, "NO": 108, "PL": 94, "FI": 91, "IN": 88, "IE": 86, "IL": 83, "KR": 77, "RU": 71, "CZ": 69, "SG": 67, "LB": 60, "TR": 58, "MX": 46, "RO": 41, "CL": 40, "AR": 39, "TW": 38, "ZA": 38, "PK": 34, "TN": 33, "SA": 32, "IR": 32, "RS": 28, "NZ": 27, "EG": 26, "MA": 25, "MY": 24, "HU": 22, "HR": 21, "SI": 20, "LU": 19, "CO": 18, "IS": 14, "CY": 14, "VN": 14, "QA": 14, "ID": 13, "BG": 12, "BF": 10, "NG": 10, "RE": 9, "BD": 9, "SK": 9, "UA": 9, "EE": 9, "TH": 9, "EC": 8, "DZ": 8, "AE": 8, "MC": 7, "JO": 6, "KE": 6, "PE": 5, "GN": 5, "SN": 5, "GH": 5, "MT": 5, "BA": 4, "GP": 4, "UY": 4, "KH": 4, "KW": 4, "BY": 4, "KZ": 4, "LV": 4, "ML": 4, "MQ": 4, "CR": 4, "IQ": 3, "TZ": 3, "MK": 3, "BI": 3, "PH": 3, "PS": 3, "CM": 3, "GF": 3, "LT": 2, "MG": 2, "MW": 2, "NC": 2, "NE": 2, "NP": 2, "OM": 2, "PA": 2, "PF": 2, "BO": 2, "CI": 2, "ET": 2, "AM": 2, "CG": 1, "CD": 1, "GA": 1, "GD": 1, "GE": 1, "GM": 1, "GT": 1, "HN": 1, "JE": 1, "LK": 1, "MD": 1, "MN": 1, "MR": 1, "NaN": 1, "PY": 1, "TD": 1, "TG": 1, "TJ": 1, "TT": 1, "UG": 1, "VE": 1, "ZM": 1, "ZW": 1, "BN": 1, "BJ": 1, "AZ": 1, "AF": 1, "CU": 1}, "KR": {"US": 1762, "CN": 562, "JP": 205, "GB": 201, "CA": 174, "IN": 159, "DE": 134, "AU": 125, "IT": 85, "ES": 85, "FR": 77, "TW": 70, "PK": 69, "SG": 67, "ET": 64, "CH": 56, "NL": 53, "EG": 39, "SA": 39, "RU": 36, "BE": 34, "MY": 34, "SE": 34, "GR": 33, "DK": 32, "VN": 32, "AT": 31, "ID": 28, "IR": 25, "FI": 23, "IL": 23, "BR": 22, "NO": 20, "TR": 19, "BD": 18, "BY": 16, "TH": 16, "CZ": 15, "NG": 14, "PL": 14, "MX": 13, "ZA": 13, "PH": 11, "PT": 10, "NZ": 9, "LK": 8, "PE": 7, "AE": 7, "IE": 7, "HU": 7, "AR": 6, "IS": 4, "IQ": 4, "MA": 4, "SI": 4, "SK": 4, "UG": 4, "CL": 4, "CO": 3, "OM": 3, "QA": 3, "RS": 3, "NP": 3, "KZ": 2, "LU": 2, "MN": 2, "PA": 2, "PF": 2, "RO": 2, "UZ": 2, "GH": 2, "HR": 2, "CY": 1, "EE": 1, "BS": 1, "BG": 1, "JM": 1, "JO": 1, "BA": 1, "KE": 1, "KG": 1, "KW": 1, "LA": 1, "MD": 1, "MM": 1, "MV": 1, "AZ": 1, "PY": 1, "RW": 1, "SD": 1, "TJ": 1, "TN": 1, "UA": 1, "VE": 1, "XK": 1, "YE": 1}, "JP": {"US": 1701, "CN": 508, "GB": 412, "DE": 292, "CA": 243, "KR": 205, "AU": 199, "FR": 198, "IT": 174, "ES": 155, "NL": 147, "CH": 123, "TW": 100, "IN": 98, "SE": 92, "SG": 92, "BR": 67, "AT": 65, "DK": 63, "TH": 59, "BE": 51, "EG": 47, "MY": 43, "NO": 42, "PL": 39, "ID": 39, "VN": 38, "RU": 37, "GR": 31, "IL": 31, "BD": 29, "PT": 29, "TR": 27, "AR": 25, "FI": 25, "CZ": 23, "IR": 21, "SA": 20, "NZ": 19, "IE": 19, "PK": 19, "HU": 18, "ZA": 16, "MX": 15, "CL": 14, "IS": 9, "NP": 8, "PH": 8, "SI": 7, "KE": 7, "CY": 7, "GH": 5, "RO": 5, "UA": 4, "VE": 4, "HR": 4, "GD": 4, "CO": 4, "PE": 4, "QA": 4, "RS": 4, "BG": 3, "KZ": 3, "LK": 3, "LU": 3, "MT": 3, "EE": 3, "ET": 3, "NG": 3, "JO": 2, "KW": 2, "MA": 2, "MD": 2, "MN": 2, "PS": 2, "SK": 2, "UY": 2, "BN": 2, "AE": 2, "CI": 1, "DZ": 1, "CD": 1, "BS": 1, "GT": 1, "BF": 1, "JE": 1, "KH": 1, "LB": 1, "LT": 1, "ML": 1, "OM": 1, "RW": 1, "SY": 1, "ZM": 1, "CR": 1}, "NL": {"US": 1687, "GB": 1161, "DE": 912, "IT": 582, "FR": 453, "AU": 433, "CA": 423, "ES": 412, "BE": 405, "CN": 370, "CH": 349, "SE": 303, "DK": 251, "NO": 176, "AT": 169, "JP": 147, "FI": 128, "BR": 110, "PT": 103, "SG": 90, "GR": 71, "IN": 67, "IL": 66, "PL": 65, "ZA": 61, "CZ": 60, "TR": 60, "IE": 54, "KR": 53, "RU": 36, "TW": 33, "HU": 32, "MX": 30, "NZ": 28, "CL": 27, "IS": 26, "IR": 24, "ID": 23, "SI": 22, "HR": 21, "AR": 21, "SA": 21, "EG": 17, "SK": 16, "MY": 14, "EE": 14, "RO": 14, "QA": 13, "CO": 13, "RS": 12, "TH": 12, "PK": 11, "BD": 11, "LU": 8, "GH": 8, "AE": 6, "KE": 6, "LB": 6, "MT": 5, "PE": 5, "TZ": 5, "UG": 5, "BG": 4, "CY": 4, "LV": 4, "BF": 4, "BY": 4, "CU": 4, "MK": 4, "BA": 4, "UY": 3, "MN": 3, "OM": 3, "MA": 3, "NG": 3, "EC": 2, "LT": 2, "NP": 2, "PH": 2, "RW": 2, "UA": 2, "VN": 2, "ZW": 2, "ET": 2, "CR": 2, "CW": 1, "CM": 1, "FJ": 1, "BN": 1, "GT": 1, "GW": 1, "HN": 1, "IQ": 1, "JE": 1, "JO": 1, "KH": 1, "AZ": 1, "KZ": 1, "MD": 1, "MW": 1, "MZ": 1, "PA": 1, "SR": 1, "VE": 1, "AL": 1}, "ES": {"US": 1527, "GB": 971, "IT": 880, "DE": 673, "FR": 599, "NL": 412, "CA": 374, "AU": 297, "PT": 293, "CH": 283, "BR": 276, "CN": 267, "SE": 232, "BE": 229, "DK": 202, "CL": 188, "JP": 155, "MX": 148, "PL": 139, "AT": 131, "CO": 128, "NO": 114, "GR": 102, "IN": 100, "FI": 92, "IL": 89, "AR": 88, "KR": 85, "IE": 82, "TR": 76, "CZ": 70, "RU": 44, "SG": 43, "RO": 39, "EC": 35, "ZA": 32, "IR": 32, "EG": 30, "PE": 30, "TW": 28, "PK": 24, "RS": 24, "HU": 22, "SA": 21, "SI": 20, "MY": 19, "NZ": 16, "CR": 16, "UY": 15, "IS": 14, "TH": 14, "SK": 13, "LT": 13, "HR": 13, "AE": 12, "CY": 12, "TN": 12, "BG": 11, "LB": 10, "VN": 10, "EE": 9, "ID": 8, "MK": 8, "LV": 8, "CU": 8, "NG": 8, "QA": 8, "PY": 8, "MA": 7, "LU": 7, "UA": 7, "BA": 6, "BD": 6, "GH": 6, "IQ": 6, "KZ": 6, "PA": 6, "PS": 6, "DZ": 5, "MT": 5, "KE": 4, "KW": 4, "VE": 4, "MZ": 3, "GT": 3, "JO": 3, "BY": 2, "GE": 2, "BJ": 2, "HN": 2, "LK": 2, "MD": 2, "NE": 2, "NI": 2, "OM": 2, "PH": 2, "AL": 2, "DO": 1, "CG": 1, "ET": 1, "FO": 1, "GA": 1, "GM": 1, "JE": 1, "ME": 1, "ML": 1, "MN": 1, "MU": 1, "MW": 1, "NaN": 1, "NC": 1, "SC": 1, "SD": 1, "SL": 1, "ST": 1, "TZ": 1, "UG": 1, "XK": 1, "ZM": 1, "BS": 1, "BI": 1, "BB": 1, "AM": 1, "AG": 1}, "IN": {"US": 1423, "GB": 431, "CA": 232, "SA": 225, "CN": 212, "AU": 198, "IT": 170, "KR": 159, "DE": 152, "ES": 100, "JP": 98, "MY": 92, "FR": 88, "NL": 67, "SE": 65, "CH": 64, "SG": 63, "BR": 56, "AE": 55, "EG": 53, "ZA": 52, "PK": 50, "TW": 50, "ET": 48, "PL": 43, "TR": 38, "NP": 38, "IL": 36, "FI": 35, "BD": 34, "PT": 32, "GR": 32, "RU": 30, "TH": 30, "BE": 30, "NO": 27, "DK": 26, "IE": 25, "IR": 22, "AT": 22, "RO": 18, "QA": 18, "OM": 17, "GH": 16, "HU": 16, "MX": 16, "AR": 15, "CZ": 14, "JO": 14, "CL": 14, "NZ": 13, "PE": 13, "KW": 12, "VN": 11, "ID": 11, "IQ": 10, "NG": 7, "CO": 6, "EE": 6, "UY": 5, "EC": 5, "SI": 5, "UG": 5, "TZ": 4, "PH": 4, "BG": 4, "IS": 4, "LV": 4, "CY": 4, "MA": 3, "MW": 3, "BH": 3, "SK": 3, "KE": 3, "LB": 3, "LK": 3, "KZ": 2, "LU": 2, "MM": 2, "MT": 2, "PS": 2, "RS": 2, "TN": 2, "TT": 2, "UA": 2, "YE": 2, "FJ": 2, "GE": 2, "HR": 2, "AG": 2, "CU": 2, "BW": 1, "BO": 1, "GD": 1, "BN": 1, "GT": 1, "KN": 1, "LT": 1, "MK": 1, "MU": 1, "MV": 1, "PG": 1, "RW": 1, "UZ": 1, "VC": 1, "VE": 1, "ZM": 1, "BB": 1, "AM": 1, "AL": 1, "AF": 1}, "CH": {"US": 1264, "DE": 998, "GB": 726, "IT": 652, "FR": 512, "NL": 349, "CA": 338, "ES": 283, "AU": 259, "CN": 213, "AT": 204, "BE": 146, "SE": 131, "JP": 123, "DK": 105, "NO": 91, "BR": 89, "PL": 79, "GR": 77, "PT": 73, "IL": 73, "IN": 64, "FI": 63, "KR": 56, "SG": 53, "ZA": 51, "CZ": 50, "IE": 41, "TR": 38, "RU": 30, "AR": 28, "IR": 26, "NZ": 26, "RS": 24, "CL": 21, "TW": 21, "MX": 20, "EG": 20, "SI": 19, "HU": 16, "IS": 14, "RO": 14, "BD": 13, "PK": 13, "SK": 13, "CY": 12, "MY": 12, "HR": 11, "TH": 10, "KE": 9, "GH": 8, "CO": 8, "EE": 7, "QA": 7, "TZ": 7, "ID": 6, "SA": 6, "UA": 6, "NG": 5, "LU": 5, "MA": 4, "ZW": 4, "JO": 4, "UY": 4, "UG": 4, "TN": 4, "MW": 4, "AL": 4, "PE": 4, "CG": 3, "BG": 3, "LT": 3, "BA": 3, "LB": 3, "NP": 3, "BH": 3, "ET": 3, "MN": 3, "EC": 3, "MT": 2, "ML": 2, "LV": 2, "KZ": 2, "AZ": 2, "GT": 2, "GN": 2, "GE": 2, "CU": 2, "BI": 2, "VN": 1, "VE": 1, "TT": 1, "TD": 1, "SS": 1, "SN": 1, "PY": 1, "PS": 1, "PF": 1, "NaN": 1, "MM": 1, "MK": 1, "MD": 1, "LY": 1, "LA": 1, "IQ": 1, "GA": 1, "DZ": 1, "CM": 1, "CD": 1, "BT": 1, "BS": 1, "BJ": 1, "BB": 1, "AE": 1}, "BR": {"US": 1157, "PT": 484, "GB": 355, "CA": 355, "IT": 288, "ES": 276, "DE": 255, "FR": 184, "AU": 180, "CN": 117, "NL": 110, "CH": 89, "SE": 80, "BE": 73, "CL": 72, "JP": 67, "AR": 62, "MX": 61, "IN": 56, "PL": 55, "DK": 49, "CO": 46, "AT": 36, "ZA": 36, "NO": 34, "CZ": 30, "UY": 29, "FI": 28, "IR": 26, "TR": 26, "IL": 24, "NZ": 23, "PE": 23, "GR": 23, "RU": 22, "KR": 22, "IE": 22, "SG": 21, "EC": 17, "TW": 16, "EG": 13, "PK": 13, "TH": 13, "QA": 12, "MY": 12, "SA": 11, "ST": 10, "AE": 9, "AO": 9, "CU": 9, "MZ": 8, "SK": 7, "RO": 7, "MN": 7, "CR": 6, "CY": 5, "GT": 5, "HU": 5, "ID": 5, "TN": 5, "NG": 5, "MT": 5, "LU": 5, "RS": 5, "PY": 4, "PA": 4, "KW": 4, "BO": 3, "LB": 3, "BG": 3, "HR": 3, "HN": 3, "AZ": 3, "PH": 3, "KH": 3, "SI": 3, "BD": 2, "VE": 2, "SD": 2, "OM": 2, "ML": 2, "MD": 2, "LA": 2, "KZ": 2, "KN": 2, "KE": 2, "JO": 2, "ET": 2, "EE": 2, "CD": 2, "ZM": 1, "YE": 1, "VN": 1, "UA": 1, "TZ": 1, "RW": 1, "PS": 1, "NE": 1, "NaN": 1, "MW": 1, "MK": 1, "MA": 1, "LV": 1, "LT": 1, "LK": 1, "JM": 1, "IS": 1, "IQ": 1, "GM": 1, "GH": 1, "GD": 1, "DZ": 1, "BY": 1, "BW": 1, "BA": 1}, "SE": {"US": 904, "GB": 617, "DE": 438, "IT": 324, "NL": 303, "DK": 257, "ES": 232, "FR": 222, "CN": 222, "AU": 221, "FI": 205, "CA": 203, "NO": 192, "CH": 131, "BE": 123, "JP": 92, "AT": 85, "BR": 80, "PL": 80, "IN": 65, "PT": 50, "GR": 47, "CZ": 46, "IE": 44, "SG": 43, "IL": 38, "HU": 36, "NZ": 34, "KR": 34, "ZA": 31, "RU": 27, "TR": 25, "TW": 24, "IS": 24, "PK": 23, "IR": 22, "EE": 21, "SI": 18, "AR": 17, "MX": 15, "SA": 15, "RO": 14, "RS": 13, "LT": 12, "MY": 11, "CL": 11, "HR": 11, "EG": 10, "SK": 9, "LU": 9, "NP": 8, "LV": 8, "CO": 8, "QA": 7, "UA": 7, "BD": 5, "PE": 5, "VN": 5, "AE": 5, "TH": 5, "NG": 4, "KE": 4, "SD": 4, "UG": 4, "GH": 4, "CY": 4, "MT": 3, "RW": 3, "LB": 3, "TZ": 3, "ZW": 3, "MW": 3, "MA": 3, "BH": 3, "IQ": 3, "MK": 2, "CD": 2, "OM": 2, "BG": 2, "ET": 2, "SY": 2, "CU": 1, "CM": 1, "EC": 1, "BW": 1, "FO": 1, "BS": 1, "HT": 1, "ID": 1, "BF": 1, "BB": 1, "BA": 1, "KH": 1, "KW": 1, "MC": 1, "MD": 1, "MN": 1, "MZ": 1, "NE": 1, "PA": 1, "AM": 1, "AL": 1, "AF": 1, "SV": 1, "TN": 1, "TT": 1}, "DK": {"US": 727, "GB": 497, "DE": 384, "SE": 257, "NL": 251, "AU": 220, "IT": 211, "ES": 202, "FR": 185, "CA": 171, "CN": 155, "NO": 144, "CH": 105, "FI": 86, "BE": 86, "AT": 73, "JP": 63, "PT": 60, "BR": 49, "PL": 45, "SG": 36, "IL": 32, "KR": 32, "RU": 31, "CZ": 31, "GR": 31, "IE": 29, "IR": 27, "IN": 26, "TR": 26, "NZ": 24, "IS": 21, "CL": 21, "HU": 21, "RO": 14, "PK": 14, "ZA": 13, "AR": 13, "LU": 11, "MX": 11, "HR": 11, "TW": 10, "MY": 10, "RS": 9, "SK": 8, "SI": 8, "AE": 7, "EE": 7, "BD": 6, "SA": 6, "QA": 5, "PE": 5, "CY": 5, "GW": 5, "GL": 4, "EG": 4, "FO": 4, "LV": 3, "UA": 3, "VN": 3, "CO": 3, "BA": 3, "BW": 3, "ID": 3, "LB": 3, "NG": 3, "MK": 3, "MA": 3, "BY": 2, "GH": 2, "CD": 2, "JM": 2, "JO": 2, "KE": 2, "LT": 2, "MT": 2, "BG": 2, "EC": 1, "ET": 1, "GE": 1, "KH": 1, "KW": 1, "KZ": 1, "LK": 1, "MD": 1, "PA": 1, "TH": 1, "TJ": 1, "TZ": 1, "UG": 1, "UY": 1, "ZW": 1, "BN": 1, "AM": 1, "CU": 1}, "BE": {"US": 612, "GB": 462, "NL": 405, "FR": 368, "IT": 365, "DE": 354, "ES": 229, "CA": 168, "AU": 154, "CN": 148, "CH": 146, "SE": 123, "DK": 86, "BR": 73, "AT": 72, "NO": 72, "PT": 68, "FI": 54, "JP": 51, "PL": 50, "CZ": 42, "GR": 40, "IL": 35, "KR": 34, "RU": 32, "IE": 31, "IN": 30, "TR": 25, "ZA": 24, "IR": 18, "MX": 18, "LB": 16, "SG": 15, "HU": 14, "AR": 14, "TW": 13, "NZ": 13, "LU": 13, "EG": 11, "PK": 11, "CL": 11, "SK": 11, "SI": 11, "SA": 11, "RO": 10, "HR": 9, "PE": 9, "QA": 9, "MY": 9, "GH": 7, "RS": 7, "BG": 6, "KN": 6, "MT": 6, "LV": 5, "CD": 5, "ET": 5, "ID": 5, "LT": 5, "KE": 5, "EE": 5, "NP": 5, "TH": 4, "VN": 4, "EC": 4, "CU": 4, "UA": 4, "CM": 3, "CY": 3, "NG": 3, "JO": 3, "TN": 3, "MK": 3, "UY": 3, "CO": 3, "IS": 3, "UG": 2, "SN": 2, "CR": 2, "BY": 2, "BF": 2, "BD": 2, "ZW": 1, "ZM": 1, "XK": 1, "UZ": 1, "TZ": 1, "SD": 1, "PS": 1, "PH": 1, "PF": 1, "PA": 1, "OM": 1, "MQ": 1, "MD": 1, "KZ": 1, "KW": 1, "KG": 1, "JE": 1, "IQ": 1, "GN": 1, "BW": 1, "BJ": 1, "BA": 1, "AE": 1, "AO": 1}, "TW": {"CN": 592, "US": 523, "GB": 108, "JP": 100, "KR": 70, "AU": 57, "DE": 51, "IN": 50, "CA": 49, "IT": 41, "FR": 38, "SG": 33, "NL": 33, "ID": 29, "MY": 29, "ES": 28, "SE": 24, "VN": 23, "TH": 21, "CH": 21, "BR": 16, "BE": 13, "CZ": 13, "PK": 12, "AT": 11, "NZ": 11, "EG": 10, "IR": 10, "NO": 10, "DK": 10, "IL": 10, "PL": 10, "SA": 10, "FI": 9, "PH": 8, "RU": 8, "PT": 8, "AR": 6, "NP": 6, "TR": 6, "ZA": 6, "MX": 4, "YE": 3, "AE": 3, "IE": 3, "CO": 3, "GR": 3, "BD": 2, "CL": 2, "LT": 2, "LV": 2, "MK": 2, "MT": 2, "NG": 2, "OM": 2, "HU": 2, "SC": 2, "CU": 1, "DO": 1, "EE": 1, "ET": 1, "GE": 1, "HN": 1, "HR": 1, "BG": 1, "IS": 1, "LB": 1, "LU": 1, "MN": 1, "PE": 1, "QA": 1, "SD": 1, "SI": 1, "SK": 1}, "IL": {"US": 589, "DE": 183, "GB": 133, "IT": 117, "CA": 110, "ES": 89, "CN": 88, "FR": 83, "CH": 73, "NL": 66, "AU": 57, "SE": 38, "IN": 36, "BE": 35, "DK": 32, "JP": 31, "AT": 25, "BR": 24, "KR": 23, "PT": 21, "GR": 20, "CZ": 20, "RU": 19, "FI": 18, "NO": 17, "SG": 15, "PL": 15, "TR": 11, "IR": 11, "AR": 10, "TW": 10, "ZA": 10, "HU": 9, "CL": 8, "CO": 7, "UA": 7, "IE": 7, "HR": 7, "MX": 7, "EG": 6, "SI": 5, "NZ": 4, "RO": 4, "SK": 4, "TH": 4, "KE": 3, "LB": 3, "LU": 3, "MY": 3, "PE": 3, "GH": 2, "CY": 2, "JE": 2, "JO": 2, "KW": 2, "PK": 2, "PS": 2, "RS": 2, "VN": 2, "AE": 1, "DZ": 1, "EC": 1, "BI": 1, "ID": 1, "BG": 1, "IS": 1, "LV": 1, "MA": 1, "MD": 1, "MK": 1, "MN": 1, "MT": 1, "NaN": 1, "QA": 1, "SA": 1, "TN": 1, "UY": 1, "VE": 1}, "AT": {"DE": 564, "US": 484, "GB": 323, "IT": 276, "CH": 204, "FR": 175, "NL": 169, "ES": 131, "CA": 116, "AU": 108, "CN": 90, "SE": 85, "DK": 73, "BE": 72, "JP": 65, "PL": 50, "NO": 49, "CZ": 44, "HU": 40, "PT": 40, "BR": 36, "FI": 34, "RU": 33, "SG": 31, "KR": 31, "GR": 31, "IL": 25, "TR": 23, "IN": 22, "HR": 20, "IE": 20, "EG": 18, "SK": 16, "RO": 16, "IR": 14, "CL": 14, "NZ": 12, "JO": 12, "SI": 11, "TW": 11, "IS": 11, "PK": 10, "RS": 9, "TH": 8, "UA": 7, "SA": 7, "LT": 7, "AE": 6, "ZA": 6, "PE": 5, "MX": 5, "EE": 5, "CO": 5, "ID": 4, "AR": 4, "BA": 3, "BD": 3, "BG": 3, "MY": 3, "OM": 3, "QA": 2, "MK": 2, "LV": 2, "LU": 2, "EC": 2, "ZM": 1, "VN": 1, "SD": 1, "RE": 1, "NG": 1, "MW": 1, "MD": 1, "MA": 1, "LK": 1, "LB": 1, "KE": 1, "GE": 1, "FO": 1, "ET": 1, "CY": 1, "CU": 1, "BY": 1, "AM": 1}, "PT": {"BR": 484, "US": 323, "ES": 293, "GB": 267, "DE": 193, "IT": 169, "FR": 156, "NL": 103, "CA": 76, "CH": 73, "CN": 72, "AU": 72, "BE": 68, "DK": 60, "SE": 50, "PL": 50, "AT": 40, "GR": 35, "NO": 33, "IN": 32, "JP": 29, "FI": 28, "IL": 21, "IE": 21, "CO": 20, "RU": 18, "CL": 18, "MX": 17, "SG": 16, "TR": 16, "HU": 15, "RO": 13, "CZ": 13, "AR": 12, "MY": 11, "KR": 10, "IR": 10, "HR": 10, "ZA": 9, "TW": 8, "AE": 8, "PK": 7, "UY": 7, "LT": 6, "MK": 6, "PE": 6, "RS": 6, "SA": 6, "NZ": 5, "TN": 5, "TH": 5, "CY": 5, "LU": 5, "DZ": 4, "EG": 4, "LB": 3, "GH": 3, "EC": 3, "MN": 3, "NG": 3, "UA": 3, "VN": 3, "BG": 3, "IS": 2, "BD": 2, "EE": 2, "KE": 2, "LV": 2, "MA": 2, "MD": 2, "MT": 2, "MZ": 2, "GT": 2, "PY": 2, "QA": 2, "SI": 2, "SK": 2, "ID": 2, "CV": 1, "CM": 1, "BY": 1, "GN": 1, "IQ": 1, "JE": 1, "KW": 1, "MU": 1, "NaN": 1, "PA": 1, "AO": 1, "PS": 1, "VE": 1, "ZW": 1, "AL": 1, "CR": 1}, "SG": {"US": 464, "CN": 416, "GB": 240, "AU": 181, "DE": 103, "JP": 92, "NL": 90, "CA": 82, "IT": 72, "FR": 67, "KR": 67, "IN": 63, "CH": 53, "ES": 43, "SE": 43, "DK": 36, "TW": 33, "AT": 31, "MY": 30, "BR": 21, "NO": 20, "ID": 17, "FI": 17, "PT": 16, "IE": 16, "IL": 15, "BE": 15, "TR": 14, "GR": 14, "TH": 14, "PK": 12, "NZ": 10, "ZA": 10, "AR": 9, "IR": 9, "RU": 8, "PL": 8, "VN": 8, "EG": 8, "BD": 6, "HU": 6, "NP": 5, "MX": 5, "SK": 5, "PS": 4, "QA": 4, "RO": 4, "LB": 4, "CL": 3, "IS": 3, "LK": 3, "EE": 3, "PH": 3, "HR": 3, "MK": 2, "PY": 2, "SA": 2, "AE": 2, "SI": 2, "UY": 2, "CO": 2, "CU": 1, "CZ": 1, "ET": 1, "BN": 1, "GH": 1, "GN": 1, "IQ": 1, "KE": 1, "KH": 1, "MM": 1, "MW": 1, "NE": 1, "PA": 1, "SN": 1, "UA": 1}, "TR": {"US": 401, "GB": 177, "IT": 142, "DE": 125, "ES": 76, "KH": 62, "NL": 60, "FR": 58, "CN": 54, "CO": 53, "CA": 53, "AU": 46, "AG": 44, "IN": 38, "CH": 38, "IR": 32, "JP": 27, "CY": 27, "DK": 26, "GR": 26, "BR": 26, "SE": 25, "BE": 25, "CZ": 23, "AT": 23, "PK": 22, "KZ": 22, "SA": 19, "EG": 19, "KR": 19, "PL": 18, "MY": 17, "PT": 16, "RO": 16, "SG": 14, "IE": 13, "AR": 13, "RS": 13, "NO": 12, "RU": 11, "IL": 11, "HU": 9, "MA": 9, "ID": 8, "FI": 8, "MX": 6, "TW": 6, "TN": 5, "ZA": 5, "AE": 5, "BD": 4, "CL": 4, "AZ": 4, "QA": 4, "LB": 3, "BA": 3, "TH": 3, "IQ": 2, "KG": 2, "BN": 2, "GE": 2, "MK": 2, "NZ": 2, "HR": 2, "OM": 2, "BG": 2, "SK": 2, "DZ": 1, "EC": 1, "EE": 1, "TJ": 1, "UA": 1, "VN": 1, "ZM": 1, "IS": 1, "JM": 1, "JO": 1, "KW": 1, "LT": 1, "LY": 1, "MU": 1, "NG": 1, "PE": 1, "PH": 1, "SD": 1, "SI": 1, "SO": 1}, "NO": {"US": 385, "GB": 301, "DE": 204, "SE": 192, "NL": 176, "IT": 160, "DK": 144, "ES": 114, "CA": 112, "FR": 108, "AU": 108, "CH": 91, "CN": 82, "BE": 72, "FI": 68, "AT": 49, "JP": 42, "BR": 34, "PT": 33, "IN": 27, "CZ": 26, "GR": 24, "IE": 23, "PL": 22, "ZA": 22, "SG": 20, "BD": 20, "KR": 20, "IL": 17, "QA": 12, "NZ": 12, "TR": 12, "RU": 12, "PK": 11, "TW": 10, "IR": 9, "IS": 9, "EE": 9, "MX": 7, "SI": 7, "TH": 7, "HU": 7, "CY": 7, "CL": 6, "EG": 6, "RS": 6, "SK": 6, "HR": 5, "MY": 5, "LU": 5, "RO": 5, "SA": 5, "IQ": 4, "KZ": 4, "VN": 3, "UA": 3, "TZ": 3, "LT": 3, "CO": 3, "MW": 3, "LV": 3, "BA": 3, "AR": 3, "NG": 3, "ID": 3, "FO": 2, "KE": 2, "LB": 2, "MT": 2, "PE": 2, "TN": 2, "UG": 2, "BG": 2, "ET": 2, "AE": 2, "BF": 2, "CG": 1, "GH": 1, "BH": 1, "KN": 1, "LK": 1, "MD": 1, "MK": 1, "SD": 1}, "PL": {"US": 378, "DE": 230, "IT": 226, "GB": 176, "ES": 139, "FR": 94, "SE": 80, "CH": 79, "CA": 74, "CZ": 72, "CN": 70, "NL": 65, "BR": 55, "AU": 54, "BE": 50, "HU": 50, "AT": 50, "PT": 50, "DK": 45, "IN": 43, "JP": 39, "RU": 34, "GR": 33, "UA": 28, "RO": 26, "IR": 24, "NO": 22, "TR": 18, "IE": 18, "SK": 17, "SA": 17, "FI": 16, "PK": 15, "IL": 15, "KR": 14, "HR": 13, "EG": 13, "ZA": 13, "BG": 12, "LT": 12, "RS": 11, "MX": 10, "TW": 10, "SI": 9, "SG": 8, "BY": 7, "AR": 6, "MY": 6, "NZ": 6, "ID": 5, "LV": 5, "AE": 5, "EE": 4, "KE": 4, "TN": 4, "LB": 4, "CO": 4, "MK": 3, "LK": 3, "LU": 3, "GE": 3, "OM": 3, "UZ": 3, "CL": 3, "KN": 3, "CY": 3, "IQ": 2, "IS": 2, "EC": 2, "KZ": 2, "GD": 2, "NG": 2, "QA": 2, "TH": 2, "UG": 2, "VN": 2, "PG": 1, "BN": 1, "BH": 1, "BD": 1, "KH": 1, "AZ": 1, "MD": 1, "MT": 1, "PE": 1, "PS": 1, "SD": 1, "ZM": 1}, "IE": {"US": 337, "GB": 334, "AU": 116, "CA": 107, "DE": 98, "IT": 90, "FR": 86, "ES": 82, "CN": 68, "NL": 54, "SE": 44, "CH": 41, "BE": 31, "DK": 29, "IN": 25, "FI": 24, "NO": 23, "BR": 22, "PT": 21, "AT": 20, "JP": 19, "RO": 18, "PL": 18, "SG": 16, "SA": 16, "QA": 16, "TR": 13, "NZ": 13, "CZ": 13, "ZA": 13, "GR": 9, "RU": 9, "IR": 8, "MY": 8, "IL": 7, "KR": 7, "CL": 6, "PK": 5, "KN": 5, "CO": 4, "HU": 4, "EG": 4, "MX": 4, "TH": 4, "TW": 3, "YE": 3, "AE": 2, "BA": 2, "BJ": 2, "AR": 2, "BH": 2, "ID": 2, "JO": 2, "MT": 2, "PH": 2, "SI": 2, "SK": 2, "UA": 2, "VN": 2, "CU": 1, "CY": 1, "EE": 1, "BS": 1, "IS": 1, "JM": 1, "KE": 1, "LB": 1, "LT": 1, "MU": 1, "NG": 1, "PS": 1, "TN": 1, "BD": 1, "BB": 1, "AZ": 1}, "EG": {"SA": 329, "US": 301, "GB": 129, "IT": 59, "DE": 59, "CN": 56, "IN": 53, "PK": 49, "JP": 47, "AU": 40, "CA": 40, "KR": 39, "AE": 38, "ES": 30, "NG": 26, "FR": 26, "MY": 25, "CH": 20, "TR": 19, "AT": 18, "GR": 17, "NL": 17, "IQ": 15, "IR": 15, "MA": 15, "QA": 15, "BR": 13, "PL": 13, "LB": 12, "BE": 11, "JO": 11, "ZA": 10, "TW": 10, "TN": 10, "SE": 10, "KW": 10, "ID": 10, "RO": 9, "MX": 8, "SG": 8, "BD": 6, "IL": 6, "NO": 6, "OM": 6, "RU": 6, "VN": 6, "SD": 5, "ET": 5, "CO": 5, "CZ": 4, "IE": 4, "PT": 4, "SY": 4, "TH": 4, "DK": 4, "YE": 4, "NZ": 3, "DZ": 3, "AR": 3, "HR": 3, "CM": 2, "FI": 2, "HU": 2, "KE": 2, "PE": 2, "GE": 1, "GH": 1, "KH": 1, "KZ": 1, "LT": 1, "MD": 1, "PH": 1, "PS": 1, "PY": 1, "SK": 1, "SO": 1, "TO": 1, "UY": 1, "UZ": 1, "ZM": 1, "BS": 1, "BN": 1, "BH": 1, "AZ": 1}, "SA": {"EG": 329, "IN": 225, "US": 216, "PK": 195, "GB": 125, "CN": 75, "IT": 62, "MY": 55, "CA": 55, "AE": 53, "AU": 42, "DE": 42, "KR": 39, "FR": 32, "BD": 32, "JO": 28, "TN": 21, "ES": 21, "NL": 21, "ET": 20, "IQ": 20, "JP": 20, "TR": 19, "PL": 17, "IE": 16, "SE": 15, "YE": 14, "ZA": 14, "OM": 13, "BR": 11, "ID": 11, "QA": 11, "BE": 11, "TW": 10, "SD": 9, "GR": 9, "NG": 9, "CZ": 9, "RO": 8, "LB": 8, "MA": 8, "KW": 8, "AT": 7, "RU": 7, "CH": 6, "DK": 6, "PT": 6, "FI": 5, "GH": 5, "GD": 5, "NO": 5, "MX": 4, "BH": 4, "HU": 4, "LT": 4, "PS": 3, "IR": 2, "CY": 2, "KE": 2, "CL": 2, "BN": 2, "AF": 2, "SG": 2, "SK": 2, "SY": 2, "TH": 2, "DZ": 1, "GE": 1, "HR": 1, "IL": 1, "BA": 1, "KZ": 1, "LV": 1, "LY": 1, "NP": 1, "AR": 1, "PE": 1, "PH": 1, "SO": 1, "TZ": 1, "UA": 1, "UZ": 1, "VN": 1, "ZM": 1, "CO": 1}, "MX": {"US": 317, "ES": 148, "GB": 74, "CA": 67, "BR": 61, "IT": 53, "FR": 46, "CO": 45, "DE": 44, "CL": 33, "CN": 33, "NL": 30, "AU": 30, "AR": 27, "CH": 20, "BE": 18, "PT": 17, "IN": 16, "JP": 15, "SE": 15, "PE": 14, "KR": 13, "DK": 11, "ZA": 11, "RU": 10, "PL": 10, "EC": 10, "GT": 8, "EG": 8, "NO": 7, "CZ": 7, "IL": 7, "CR": 6, "GR": 6, "TR": 6, "PY": 5, "PH": 5, "SG": 5, "AT": 5, "SA": 4, "TW": 4, "FI": 4, "VE": 4, "HU": 4, "BO": 4, "IE": 4, "NG": 4, "PA": 4, "PK": 4, "BG": 3, "UY": 3, "DO": 3, "MY": 3, "NZ": 3, "RO": 3, "ID": 3, "HR": 3, "IQ": 2, "IR": 2, "LB": 2, "MN": 2, "TZ": 2, "CU": 2, "DZ": 1, "BY": 1, "BT": 1, "GH": 1, "BI": 1, "KE": 1, "MA": 1, "NaN": 1, "NP": 1, "PS": 1, "QA": 1, "SI": 1, "TH": 1, "TN": 1, "TT": 1, "UG": 1}, "IR": {"US": 309, "CA": 105, "GB": 91, "AU": 83, "IT": 74, "DE": 63, "CN": 48, "TR": 32, "ES": 32, "FR": 32, "DK": 27, "BR": 26, "CH": 26, "RU": 26, "KR": 25, "PL": 24, "NL": 24, "IN": 22, "SE": 22, "JP": 21, "BE": 18, "PK": 16, "EG": 15, "AT": 14, "FI": 14, "BH": 14, "GR": 13, "ZA": 13, "CZ": 13, "MY": 12, "IQ": 11, "IL": 11, "TW": 10, "PT": 10, "NZ": 9, "NO": 9, "SG": 9, "IE": 8, "RO": 7, "DZ": 6, "TH": 6, "MA": 5, "KZ": 5, "HR": 5, "CL": 4, "HU": 4, "AZ": 4, "CO": 4, "KW": 4, "OM": 4, "QA": 3, "RS": 3, "SK": 3, "AG": 3, "JM": 2, "KE": 2, "MX": 2, "PE": 2, "SA": 2, "TN": 2, "BW": 2, "VN": 2, "YE": 2, "BD": 2, "CY": 2, "ID": 2, "BG": 2, "EC": 1, "EE": 1, "ET": 1, "BO": 1, "GE": 1, "IS": 1, "JO": 1, "LU": 1, "LV": 1, "MD": 1, "ME": 1, "MN": 1, "NaN": 1, "NG": 1, "PS": 1, "UA": 1, "UG": 1, "VE": 1, "AR": 1, "CR": 1, "AE": 1}, "GR": {"GB": 306, "US": 295, "IT": 197, "DE": 179, "FR": 110, "ES": 102, "CH": 77, "NL": 71, "AU": 60, "CA": 57, "CY": 50, "SE": 47, "CN": 45, "BE": 40, "PT": 35, "KR": 33, "PL": 33, "IN": 32, "JP": 31, "DK": 31, "AT": 31, "TR": 26, "NO": 24, "BR": 23, "FI": 22, "RO": 22, "IL": 20, "CZ": 19, "RS": 18, "EG": 17, "HU": 17, "NG": 16, "SG": 14, "IR": 13, "ET": 13, "CL": 13, "AE": 11, "IE": 9, "SA": 9, "MY": 7, "BG": 6, "HR": 6, "MX": 6, "RU": 6, "SK": 6, "SI": 5, "CO": 5, "PK": 5, "MK": 4, "NZ": 4, "PE": 4, "UA": 4, "VN": 4, "ZA": 4, "AR": 4, "LB": 4, "TN": 3, "IS": 3, "BH": 3, "TW": 3, "FO": 2, "BA": 2, "GH": 2, "KW": 2, "KZ": 2, "LK": 2, "LU": 2, "LV": 2, "MA": 2, "EC": 1, "EE": 1, "ID": 1, "IQ": 1, "JE": 1, "KE": 1, "MD": 1, "MU": 1, "OM": 1, "PA": 1, "RW": 1, "SD": 1, "TH": 1, "TJ": 1, "UG": 1, "UY": 1, "XK": 1, "AO": 1}, "RU": {"US": 300, "DE": 146, "GB": 108, "IT": 85, "FR": 71, "CN": 61, "AU": 52, "CA": 44, "ES": 44, "CZ": 41, "JP": 37, "NL": 36, "KR": 36, "PL": 34, "AT": 33, "BE": 32, "DK": 31, "IN": 30, "CH": 30, "TJ": 29, "SE": 27, "IR": 26, "BR": 22, "IL": 19, "UA": 19, "PT": 18, "BY": 17, "FI": 16, "KZ": 15, "RS": 14, "AM": 12, "NO": 12, "TR": 11, "BG": 10, "MX": 10, "IE": 9, "HU": 9, "SG": 8, "PK": 8, "TW": 8, "SA": 7, "AR": 6, "EG": 6, "GR": 6, "HR": 6, "MY": 6, "ZA": 6, "SI": 5, "RO": 5, "KG": 4, "UZ": 3, "LT": 3, "BD": 3, "ID": 3, "SK": 3, "TH": 3, "DZ": 2, "EC": 2, "JO": 2, "BA": 2, "EE": 2, "AZ": 2, "GE": 2, "MD": 2, "MK": 2, "MT": 2, "NZ": 2, "RW": 2, "SY": 2, "TO": 2, "VN": 2, "IQ": 1, "KE": 1, "LB": 1, "LV": 1, "MN": 1, "MW": 1, "NG": 1, "OM": 1, "PE": 1, "PY": 1, "QA": 1, "TN": 1, "TZ": 1, "UG": 1, "UY": 1, "ZW": 1, "CO": 1}, "FI": {"US": 293, "SE": 205, "GB": 198, "DE": 177, "NL": 128, "IT": 116, "AU": 105, "CN": 105, "ES": 92, "FR": 91, "DK": 86, "CA": 68, "NO": 68, "CH": 63, "BE": 54, "IN": 35, "AT": 34, "BR": 28, "PT": 28, "JP": 25, "IE": 24, "KR": 23, "GR": 22, "EE": 21, "IL": 18, "CZ": 17, "SG": 17, "RU": 16, "PL": 16, "IS": 14, "IR": 14, "HU": 14, "TW": 9, "TR": 8, "MY": 8, "HR": 7, "PK": 7, "NZ": 6, "CO": 5, "QA": 5, "SA": 5, "CL": 5, "MX": 4, "RO": 4, "ID": 4, "ZA": 3, "LU": 3, "GH": 3, "SK": 3, "AR": 3, "RS": 3, "KW": 3, "AE": 3, "BD": 3, "LT": 2, "MD": 2, "MK": 2, "MT": 2, "MW": 2, "NP": 2, "SI": 2, "UA": 2, "CY": 2, "EG": 2, "FO": 1, "KE": 1, "KH": 1, "KZ": 1, "LV": 1, "MC": 1, "NG": 1, "PA": 1, "PE": 1, "TN": 1, "UY": 1, "VN": 1, "BG": 1, "CU": 1}, "ZA": {"US": 241, "GB": 189, "AU": 115, "CA": 71, "DE": 66, "NL": 61, "IN": 52, "CH": 51, "IT": 42, "NG": 40, "FR": 38, "BR": 36, "ES": 32, "SE": 31, "CN": 25, "BE": 24, "NO": 22, "KE": 19, "JP": 16, "SA": 14, "IR": 13, "KR": 13, "DK": 13, "PL": 13, "IE": 13, "MX": 11, "EG": 10, "IL": 10, "SG": 10, "GH": 9, "TZ": 9, "ZW": 9, "UG": 9, "PT": 9, "NZ": 9, "AE": 8, "ZM": 7, "MY": 6, "AT": 6, "CL": 6, "CY": 6, "RU": 6, "TW": 6, "QA": 5, "KN": 5, "TR": 5, "TH": 5, "CM": 5, "GR": 4, "BW": 4, "PK": 4, "UA": 4, "MW": 4, "FI": 3, "AR": 3, "PE": 3, "PH": 3, "CZ": 3, "GM": 3, "HU": 3, "BG": 3, "NaN": 3, "MA": 3, "IQ": 2, "IS": 2, "EC": 2, "JO": 2, "LV": 2, "MK": 2, "CD": 2, "MN": 2, "VN": 2, "RO": 2, "SL": 2, "BF": 2, "ET": 2, "CO": 2, "CU": 1, "DZ": 1, "CG": 1, "TN": 1, "XK": 1, "FO": 1, "GA": 1, "TT": 1, "BD": 1, "JE": 1, "BA": 1, "LA": 1, "LB": 1, "LT": 1, "LU": 1, "LY": 1, "ML": 1, "MU": 1, "MZ": 1, "NP": 1, "OM": 1, "PS": 1, "VE": 1, "RW": 1, "SI": 1, "SK": 1}, "NZ": {"US": 240, "AU": 220, "GB": 174, "CA": 86, "CN": 83, "DE": 44, "SE": 34, "NL": 28, "FR": 27, "CH": 26, "DK": 24, "BR": 23, "IT": 23, "JP": 19, "ES": 16, "PK": 15, "IE": 13, "IN": 13, "BE": 13, "NO": 12, "AT": 12, "TW": 11, "SG": 10, "KR": 9, "IR": 9, "ZA": 9, "MY": 9, "FI": 6, "HU": 6, "PL": 6, "BG": 5, "PH": 5, "PT": 5, "QA": 5, "AR": 5, "GR": 4, "IL": 4, "CO": 4, "CD": 3, "MX": 3, "BY": 3, "EG": 3, "CZ": 3, "VN": 3, "ID": 3, "KE": 2, "CL": 2, "GH": 2, "PE": 2, "RU": 2, "TH": 2, "TR": 2, "ET": 1, "FK": 1, "HR": 1, "BD": 1, "AZ": 1, "LK": 1, "LT": 1, "MD": 1, "PG": 1, "RO": 1, "RS": 1, "SI": 1, "SK": 1, "WS": 1}, "TH": {"US": 211, "GB": 80, "JP": 59, "CN": 53, "AU": 33, "IN": 30, "CA": 29, "IT": 22, "TW": 21, "DE": 18, "KR": 16, "SG": 14, "ES": 14, "BR": 13, "NL": 12, "ID": 10, "CH": 10, "VN": 10, "MY": 9, "PK": 9, "FR": 9, "AT": 8, "NO": 7, "IR": 6, "IS": 6, "NP": 6, "PT": 5, "ZA": 5, "SE": 5, "BE": 4, "LB": 4, "IE": 4, "IL": 4, "MM": 4, "EG": 4, "AE": 3, "TR": 3, "CZ": 3, "PH": 3, "RU": 3, "JO": 2, "CL": 2, "LA": 2, "ML": 2, "GH": 2, "NG": 2, "NZ": 2, "PE": 2, "PL": 2, "RO": 2, "SA": 2, "CU": 1, "TN": 1, "DK": 1, "UG": 1, "YE": 1, "ET": 1, "GD": 1, "GR": 1, "HU": 1, "IQ": 1, "BD": 1, "JM": 1, "MA": 1, "MW": 1, "MX": 1, "AR": 1, "OM": 1, "AO": 1, "RS": 1, "SI": 1}, "CZ": {"US": 202, "DE": 135, "GB": 119, "IT": 108, "CA": 74, "PL": 72, "ES": 70, "FR": 69, "NL": 60, "CH": 50, "CN": 50, "AU": 49, "SE": 46, "AT": 44, "BE": 42, "RU": 41, "SK": 37, "DK": 31, "BR": 30, "NO": 26, "TR": 23, "JP": 23, "IL": 20, "GR": 19, "FI": 17, "HU": 17, "KR": 15, "IN": 14, "IQ": 13, "IR": 13, "TW": 13, "PT": 13, "IE": 13, "PK": 9, "HR": 9, "SA": 9, "MY": 8, "AR": 8, "RS": 8, "RO": 7, "MX": 7, "UA": 7, "SI": 5, "CL": 5, "BG": 5, "EG": 4, "UZ": 4, "AE": 4, "LT": 3, "KE": 3, "TH": 3, "ZA": 3, "NZ": 3, "NG": 3, "PE": 3, "IS": 2, "LB": 2, "BA": 2, "BJ": 2, "EE": 2, "CO": 2, "GE": 1, "ID": 1, "JO": 1, "KW": 1, "LV": 1, "MD": 1, "MK": 1, "MT": 1, "MW": 1, "QA": 1, "SG": 1, "SO": 1, "TJ": 1, "VN": 1, "XK": 1, "ZW": 1, "BY": 1, "BO": 1, "BH": 1}, "PK": {"US": 196, "SA": 195, "CN": 138, "GB": 119, "KR": 69, "MY": 61, "CA": 51, "IN": 50, "EG": 49, "AU": 36, "DE": 35, "FR": 34, "AE": 32, "IT": 29, "ES": 24, "SE": 23, "TR": 22, "JP": 19, "IR": 16, "BD": 16, "ID": 16, "PL": 15, "NZ": 15, "DK": 14, "BR": 13, "CH": 13, "QA": 13, "TW": 12, "SG": 12, "RO": 12, "BE": 11, "NL": 11, "NO": 11, "AT": 10, "BN": 9, "IQ": 9, "CZ": 9, "TH": 9, "OM": 8, "RU": 8, "FI": 7, "NG": 7, "PT": 7, "SD": 6, "IE": 5, "YE": 5, "GR": 5, "KG": 4, "TT": 4, "ZA": 4, "EC": 4, "JO": 4, "CY": 4, "MX": 4, "NP": 3, "ET": 3, "EE": 3, "GD": 3, "VN": 3, "MA": 3, "IS": 2, "LB": 2, "LT": 2, "CD": 2, "BH": 2, "HU": 2, "UG": 2, "IL": 2, "DZ": 1, "CG": 1, "BO": 1, "GH": 1, "HR": 1, "KE": 1, "KW": 1, "MK": 1, "SK": 1, "TZ": 1, "UA": 1, "ZW": 1, "AF": 1}, "CL": {"ES": 188, "US": 180, "BR": 72, "GB": 63, "DE": 61, "AU": 42, "FR": 40, "CA": 36, "IT": 33, "MX": 33, "AR": 29, "CO": 28, "NL": 27, "CH": 21, "DK": 21, "CN": 20, "PT": 18, "JP": 14, "AT": 14, "IN": 14, "GR": 13, "BE": 11, "SE": 11, "PE": 11, "PY": 10, "UY": 10, "CR": 8, "EC": 8, "IL": 8, "IE": 6, "NO": 6, "ZA": 6, "CZ": 5, "FI": 5, "VE": 5, "IR": 4, "TR": 4, "BO": 4, "KR": 4, "SG": 3, "LU": 3, "PL": 3, "PA": 3, "TW": 2, "TH": 2, "SA": 2, "RS": 2, "RO": 2, "NZ": 2, "MY": 2, "MN": 2, "BJ": 2, "HU": 2, "GT": 2, "CU": 2, "VN": 1, "TN": 1, "TJ": 1, "SI": 1, "PS": 1, "NaN": 1, "MA": 1, "LB": 1, "KH": 1, "KE": 1, "JM": 1, "HR": 1, "HN": 1, "GM": 1, "DZ": 1, "DO": 1, "CY": 1, "BD": 1}, "AR": {"US": 186, "ES": 88, "GB": 69, "IT": 65, "BR": 62, "DE": 55, "CA": 40, "FR": 39, "CL": 29, "CH": 28, "MX": 27, "JP": 25, "NL": 21, "CN": 19, "AU": 19, "SE": 17, "CO": 16, "IN": 15, "BE": 14, "TR": 13, "DK": 13, "PT": 12, "UY": 10, "IL": 10, "SG": 9, "PE": 8, "CZ": 8, "EC": 6, "KR": 6, "PL": 6, "RU": 6, "TW": 6, "NZ": 5, "HU": 5, "RO": 4, "GR": 4, "AT": 4, "VE": 3, "ZA": 3, "MT": 3, "NO": 3, "GT": 3, "FI": 3, "EG": 3, "SI": 2, "MY": 2, "IE": 2, "CR": 2, "BD": 2, "AE": 1, "TN": 1, "TH": 1, "SK": 1, "SA": 1, "RS": 1, "PY": 1, "PS": 1, "PH": 1, "PA": 1, "NaN": 1, "MN": 1, "LB": 1, "KE": 1, "IR": 1, "HR": 1, "DZ": 1, "CY": 1, "CU": 1, "BG": 1}, "CO": {"US": 169, "ES": 128, "TR": 53, "BR": 46, "MX": 45, "GB": 38, "CA": 32, "CL": 28, "IT": 23, "DE": 21, "PT": 20, "FR": 18, "AU": 17, "AR": 16, "CN": 13, "NL": 13, "PE": 10, "SE": 8, "CH": 8, "IL": 7, "UY": 7, "AG": 6, "EC": 6, "GT": 6, "IN": 6, "FI": 5, "CU": 5, "KH": 5, "GR": 5, "VE": 5, "ID": 5, "AT": 5, "EG": 5, "IE": 4, "BO": 4, "IR": 4, "RS": 4, "PL": 4, "NZ": 4, "JP": 4, "DK": 3, "KR": 3, "TW": 3, "NO": 3, "NG": 3, "CR": 3, "BE": 3, "LB": 2, "HU": 2, "GH": 2, "KW": 2, "CZ": 2, "SG": 2, "XK": 2, "ZA": 2, "MY": 2, "MD": 1, "MA": 1, "LT": 1, "KE": 1, "JO": 1, "IQ": 1, "HR": 1, "HN": 1, "BG": 1, "AE": 1, "PY": 1, "QA": 1, "RU": 1, "SA": 1, "SK": 1, "SY": 1, "PH": 1, "UA": 1, "UG": 1, "PA": 1}, "HU": {"US": 131, "DE": 116, "GB": 71, "IT": 54, "PL": 50, "AT": 40, "SE": 36, "NL": 32, "CN": 26, "FR": 22, "ES": 22, "DK": 21, "JP": 18, "CZ": 17, "CA": 17, "GR": 17, "IN": 16, "CH": 16, "PT": 15, "AU": 15, "BE": 14, "FI": 14, "HR": 11, "RO": 10, "TR": 9, "RU": 9, "IL": 9, "KR": 7, "NO": 7, "NZ": 6, "SG": 6, "SI": 6, "SK": 6, "AR": 5, "BR": 5, "IE": 4, "IR": 4, "LV": 4, "MX": 4, "RS": 4, "SA": 4, "BG": 3, "LU": 3, "ZA": 3, "EG": 2, "CL": 2, "CO": 2, "JO": 2, "LT": 2, "MK": 2, "MN": 2, "MY": 2, "PK": 2, "TW": 2, "UA": 2, "CY": 1, "DZ": 1, "EC": 1, "AE": 1, "ID": 1, "IS": 1, "KE": 1, "NaN": 1, "BH": 1, "PS": 1, "TH": 1, "TN": 1, "VE": 1, "YE": 1, "BD": 1}, "PE": {"US": 111, "ES": 30, "CA": 27, "IT": 24, "BR": 23, "GB": 23, "MX": 14, "IN": 13, "AU": 12, "CL": 11, "CO": 10, "CN": 10, "BE": 9, "AR": 8, "KR": 7, "PT": 6, "DK": 5, "SE": 5, "FR": 5, "NL": 5, "AT": 5, "DE": 5, "GR": 4, "EC": 4, "CH": 4, "JP": 4, "IL": 3, "ZA": 3, "ID": 3, "CZ": 3, "IR": 2, "LB": 2, "EG": 2, "GH": 2, "MY": 2, "NO": 2, "NZ": 2, "SK": 2, "TH": 2, "FI": 1, "GE": 1, "GT": 1, "HR": 1, "JO": 1, "KE": 1, "MD": 1, "NG": 1, "NI": 1, "PL": 1, "PY": 1, "RO": 1, "RU": 1, "SA": 1, "SI": 1, "TR": 1, "TW": 1, "UY": 1}, "MY": {"IN": 92, "US": 90, "CN": 88, "AU": 86, "GB": 72, "PK": 61, "SA": 55, "JP": 43, "KR": 34, "ID": 32, "IT": 31, "SG": 30, "TW": 29, "DE": 26, "EG": 25, "FR": 24, "ES": 19, "IQ": 18, "TR": 17, "CA": 17, "BD": 16, "NL": 14, "BR": 12, "IR": 12, "CH": 12, "AE": 11, "SE": 11, "PT": 11, "JO": 10, "NG": 10, "DK": 10, "TH": 9, "BE": 9, "NZ": 9, "IE": 8, "CZ": 8, "OM": 8, "FI": 8, "QA": 7, "BN": 7, "GR": 7, "ZA": 6, "PL": 6, "RU": 6, "NO": 5, "NP": 5, "VN": 5, "LK": 4, "YE": 3, "IL": 3, "MX": 3, "TN": 3, "AT": 3, "MA": 3, "HR": 3, "GH": 3, "KE": 2, "LB": 2, "MK": 2, "CL": 2, "PE": 2, "PH": 2, "SN": 2, "CY": 2, "AR": 2, "HU": 2, "ET": 2, "CO": 2, "CU": 1, "FJ": 1, "BH": 1, "KH": 1, "KW": 1, "MD": 1, "MM": 1, "RO": 1, "SK": 1, "SY": 1}, "AE": {"US": 91, "IN": 55, "SA": 53, "GB": 50, "EG": 38, "AU": 34, "PK": 32, "DE": 25, "CA": 21, "CN": 21, "IT": 18, "ES": 12, "JO": 12, "MY": 11, "GR": 11, "BR": 9, "QA": 8, "FR": 8, "ZA": 8, "PT": 8, "IQ": 7, "DK": 7, "KR": 7, "AT": 6, "NL": 6, "OM": 6, "PL": 5, "SE": 5, "TR": 5, "BD": 4, "CZ": 4, "TW": 3, "TH": 3, "NG": 3, "FI": 3, "IE": 2, "ID": 2, "CY": 2, "BH": 2, "SG": 2, "RS": 2, "NO": 2, "MA": 2, "LT": 2, "LB": 2, "JP": 2, "IL": 1, "HU": 1, "GH": 1, "ET": 1, "AR": 1, "DZ": 1, "CO": 1, "CH": 1, "AL": 1, "BE": 1, "BA": 1, "AZ": 1, "ZM": 1, "YE": 1, "SD": 1, "KZ": 1, "KW": 1, "IR": 1}, "LB": {"US": 86, "FR": 60, "IT": 21, "GB": 21, "BE": 16, "CA": 16, "DE": 13, "EG": 12, "ES": 10, "AU": 9, "SA": 8, "NL": 6, "QA": 6, "TN": 5, "CN": 5, "PL": 4, "SG": 4, "SY": 4, "TH": 4, "GR": 4, "PT": 3, "RO": 3, "SE": 3, "TR": 3, "BR": 3, "IL": 3, "DK": 3, "CH": 3, "KW": 3, "ID": 3, "IN": 3, "CZ": 2, "JO": 2, "CO": 2, "MA": 2, "MX": 2, "MY": 2, "NO": 2, "PE": 2, "PK": 2, "CY": 2, "AE": 2, "CL": 1, "DZ": 1, "GE": 1, "IE": 1, "IQ": 1, "JP": 1, "OM": 1, "PS": 1, "RU": 1, "TW": 1, "ZA": 1, "AT": 1, "AR": 1}, "NG": {"US": 80, "GB": 58, "ZA": 40, "AU": 30, "CN": 28, "EG": 26, "CA": 21, "GR": 16, "KR": 14, "DE": 14, "IT": 13, "MY": 10, "FR": 10, "SA": 9, "ES": 8, "PK": 7, "GH": 7, "IN": 7, "CH": 5, "BR": 5, "KE": 4, "SE": 4, "UG": 4, "MX": 4, "AE": 3, "BE": 3, "CO": 3, "GM": 3, "DK": 3, "PT": 3, "NO": 3, "NL": 3, "CZ": 3, "JP": 3, "IQ": 2, "CM": 2, "BD": 2, "MA": 2, "GN": 2, "PL": 2, "QA": 2, "RO": 2, "SK": 2, "SL": 2, "TH": 2, "TW": 2, "UA": 2, "ET": 2, "CY": 1, "EE": 1, "CD": 1, "FI": 1, "BW": 1, "GT": 1, "BG": 1, "IE": 1, "BF": 1, "IR": 1, "IS": 1, "BA": 1, "KZ": 1, "LU": 1, "MU": 1, "MW": 1, "MZ": 1, "NaN": 1, "PE": 1, "RU": 1, "RW": 1, "SN": 1, "TD": 1, "TN": 1, "TR": 1, "XK": 1, "AT": 1}, "QA": {"US": 80, "GB": 77, "AU": 32, "DE": 29, "CA": 24, "IN": 18, "IE": 16, "IT": 15, "EG": 15, "CN": 15, "FR": 14, "NL": 13, "PK": 13, "NO": 12, "BR": 12, "SA": 11, "BE": 9, "AE": 8, "ES": 8, "MY": 7, "CH": 7, "SE": 7, "LB": 6, "TN": 6, "NZ": 5, "ZA": 5, "OM": 5, "DK": 5, "FI": 5, "SG": 4, "TR": 4, "JO": 4, "JP": 4, "IR": 3, "KR": 3, "SK": 3, "NG": 2, "AT": 2, "HR": 2, "PL": 2, "PT": 2, "CZ": 1, "EC": 1, "GH": 1, "IL": 1, "BD": 1, "BA": 1, "KZ": 1, "MK": 1, "MR": 1, "MX": 1, "PH": 1, "PS": 1, "RO": 1, "RU": 1, "RW": 1, "SD": 1, "TW": 1, "ZM": 1, "CO": 1}, "BD": {"US": 79, "AU": 56, "CN": 34, "IN": 34, "SA": 32, "GB": 32, "JP": 29, "CA": 26, "NO": 20, "KR": 18, "MY": 16, "PK": 16, "IT": 13, "CH": 13, "DE": 11, "NL": 11, "FR": 9, "ID": 7, "DK": 6, "EG": 6, "ES": 6, "SG": 6, "SE": 5, "TR": 4, "AE": 4, "AT": 3, "TN": 3, "NP": 3, "RU": 3, "IQ": 3, "FI": 3, "UG": 2, "TW": 2, "PT": 2, "PH": 2, "NG": 2, "MA": 2, "IR": 2, "GH": 2, "BR": 2, "BE": 2, "AR": 2, "ZA": 1, "XK": 1, "VN": 1, "TH": 1, "RO": 1, "QA": 1, "PL": 1, "OM": 1, "NZ": 1, "LU": 1, "LK": 1, "KE": 1, "IE": 1, "HU": 1, "EE": 1, "EC": 1, "CL": 1}, "VN": {"US": 75, "JP": 38, "AU": 36, "KR": 32, "GB": 25, "TW": 23, "CN": 19, "DE": 14, "FR": 14, "IT": 14, "CA": 12, "IN": 11, "ES": 10, "TH": 10, "SG": 8, "EG": 6, "NP": 5, "MY": 5, "SE": 5, "GR": 4, "BE": 4, "ID": 4, "NO": 3, "DK": 3, "PK": 3, "NZ": 3, "PT": 3, "ZW": 2, "BW": 2, "IR": 2, "JM": 2, "EE": 2, "KW": 2, "CY": 2, "NL": 2, "PL": 2, "ZA": 2, "RU": 2, "IE": 2, "ET": 2, "IL": 2, "SY": 1, "CZ": 1, "CL": 1, "CH": 1, "FI": 1, "BS": 1, "BR": 1, "GH": 1, "TR": 1, "BF": 1, "BD": 1, "KE": 1, "LK": 1, "MA": 1, "MD": 1, "UG": 1, "AT": 1, "AO": 1, "UY": 1, "SA": 1}, "RS": {"IT": 66, "US": 57, "GB": 31, "FR": 28, "DE": 26, "ES": 24, "CH": 24, "BA": 20, "GR": 18, "AU": 17, "RU": 14, "SE": 13, "TR": 13, "NL": 12, "PL": 11, "HR": 9, "AT": 9, "DK": 9, "SI": 9, "SK": 9, "CN": 8, "CZ": 8, "CA": 7, "BE": 7, "NO": 6, "PT": 6, "RO": 5, "BR": 5, "HU": 4, "CO": 4, "MK": 4, "JP": 4, "LT": 3, "IR": 3, "KR": 3, "FI": 3, "IN": 2, "CL": 2, "ME": 2, "BG": 2, "UA": 2, "AE": 2, "IL": 2, "CY": 1, "EC": 1, "ID": 1, "IS": 1, "MA": 1, "NZ": 1, "AR": 1, "TH": 1, "XK": 1}, "ET": {"KR": 64, "IN": 48, "US": 32, "AU": 21, "SA": 20, "GB": 15, "GR": 13, "DE": 6, "EG": 5, "BE": 5, "IT": 4, "CA": 4, "CN": 4, "OM": 3, "PK": 3, "JP": 3, "CH": 3, "BW": 2, "BR": 2, "FR": 2, "GH": 2, "IQ": 2, "KE": 2, "KW": 2, "LC": 2, "MY": 2, "NG": 2, "NL": 2, "NO": 2, "NP": 2, "SE": 2, "TZ": 2, "VN": 2, "ZA": 2, "DK": 1, "ES": 1, "CD": 1, "IR": 1, "JM": 1, "MW": 1, "MZ": 1, "NZ": 1, "RW": 1, "SG": 1, "TH": 1, "TT": 1, "TW": 1, "AE": 1, "AT": 1}, "KH": {"TR": 62, "US": 25, "CA": 23, "CO": 5, "FR": 4, "BR": 3, "DE": 3, "IT": 2, "GB": 2, "AU": 2, "AG": 2, "CY": 1, "CL": 1, "DK": 1, "EG": 1, "FI": 1, "IS": 1, "JP": 1, "MW": 1, "MY": 1, "NL": 1, "PL": 1, "SE": 1, "SG": 1, "AZ": 1}, "SI": {"IT": 56, "GB": 40, "US": 39, "DE": 34, "NL": 22, "ES": 20, "FR": 20, "CH": 19, "SE": 18, "HR": 13, "AT": 11, "BE": 11, "CA": 10, "PL": 9, "RS": 9, "DK": 8, "JP": 7, "NO": 7, "AU": 7, "HU": 6, "RU": 5, "GR": 5, "CZ": 5, "IN": 5, "CN": 5, "IL": 5, "KR": 4, "BR": 3, "FI": 2, "AR": 2, "PT": 2, "RO": 2, "SG": 2, "IE": 2, "CY": 1, "CL": 1, "BG": 1, "BA": 1, "KZ": 1, "LT": 1, "MT": 1, "MX": 1, "NZ": 1, "PE": 1, "TH": 1, "TN": 1, "TR": 1, "TW": 1, "UA": 1, "UY": 1, "XK": 1, "ZA": 1}, "GH": {"US": 55, "GB": 28, "AU": 18, "IN": 16, "DE": 10, "ZA": 9, "CN": 9, "CA": 9, "NL": 8, "CH": 8, "BE": 7, "KE": 7, "NG": 7, "ES": 6, "JP": 5, "IT": 5, "SA": 5, "FR": 5, "SE": 4, "ZM": 4, "PT": 3, "FI": 3, "KW": 3, "MY": 3, "BD": 2, "GR": 2, "HR": 2, "ID": 2, "IL": 2, "KR": 2, "NZ": 2, "PE": 2, "TH": 2, "UG": 2, "DK": 2, "CO": 2, "ET": 2, "EG": 1, "CD": 1, "BW": 1, "AE": 1, "BR": 1, "IQ": 1, "JM": 1, "MU": 1, "MW": 1, "MX": 1, "NO": 1, "NP": 1, "PH": 1, "PK": 1, "QA": 1, "SG": 1, "TZ": 1, "UA": 1, "VN": 1, "BJ": 1, "BH": 1, "BF": 1, "AO": 1}, "NP": {"US": 55, "IN": 38, "CN": 20, "GB": 19, "SE": 8, "JP": 8, "TH": 6, "TW": 6, "SG": 5, "VN": 5, "MY": 5, "BE": 5, "AU": 4, "PK": 3, "BD": 3, "KR": 3, "CH": 3, "ID": 3, "FI": 2, "FR": 2, "NL": 2, "CA": 2, "ET": 2, "BT": 1, "GH": 1, "KE": 1, "LK": 1, "MN": 1, "MX": 1, "PH": 1, "RO": 1, "SA": 1, "TT": 1, "TZ": 1, "UG": 1, "ZA": 1, "ZM": 1}, "HR": {"DE": 53, "US": 41, "IT": 37, "GB": 30, "NL": 21, "FR": 21, "AT": 20, "SI": 13, "PL": 13, "ES": 13, "CH": 11, "HU": 11, "AU": 11, "SE": 11, "DK": 11, "PT": 10, "BE": 9, "RS": 9, "CZ": 9, "CN": 8, "FI": 7, "IL": 7, "CA": 6, "GR": 6, "RU": 6, "NO": 5, "IR": 5, "JP": 4, "LT": 3, "BG": 3, "BR": 3, "EG": 3, "SG": 3, "MY": 3, "MX": 3, "BA": 2, "GH": 2, "IN": 2, "KR": 2, "QA": 2, "RO": 2, "TR": 2, "UA": 2, "CO": 1, "CL": 1, "EE": 1, "GE": 1, "ID": 1, "KE": 1, "LV": 1, "MA": 1, "MD": 1, "ME": 1, "MK": 1, "MT": 1, "NE": 1, "NZ": 1, "OM": 1, "PE": 1, "PK": 1, "SA": 1, "SK": 1, "TJ": 1, "TW": 1, "AR": 1}, "RO": {"GB": 53, "IT": 51, "US": 49, "FR": 41, "ES": 39, "DE": 36, "PL": 26, "GR": 22, "IE": 18, "IN": 18, "CN": 18, "TR": 16, "AT": 16, "CA": 15, "SE": 14, "NL": 14, "DK": 14, "CH": 14, "PT": 13, "PK": 12, "HU": 10, "AU": 10, "BE": 10, "EG": 9, "SA": 8, "UA": 8, "BR": 7, "IR": 7, "CZ": 7, "MA": 7, "BG": 6, "SK": 5, "RU": 5, "RS": 5, "JP": 5, "NO": 5, "FI": 4, "AR": 4, "SG": 4, "IL": 4, "LB": 3, "MX": 3, "OM": 3, "TN": 3, "KR": 2, "CL": 2, "MK": 2, "NG": 2, "HR": 2, "SI": 2, "TH": 2, "ZA": 2, "DZ": 1, "EC": 1, "BN": 1, "GE": 1, "IQ": 1, "BD": 1, "JO": 1, "BA": 1, "KE": 1, "KN": 1, "LT": 1, "LU": 1, "LV": 1, "MN": 1, "MQ": 1, "MT": 1, "MW": 1, "MY": 1, "NaN": 1, "NP": 1, "NZ": 1, "PE": 1, "PS": 1, "QA": 1, "VE": 1, "XK": 1}, "JO": {"US": 53, "GB": 41, "SA": 28, "IT": 18, "IN": 14, "AU": 12, "AT": 12, "CA": 12, "AE": 12, "EG": 11, "MY": 10, "ID": 9, "DE": 6, "FR": 6, "CN": 5, "IQ": 4, "CH": 4, "OM": 4, "BN": 4, "PK": 4, "QA": 4, "SY": 3, "BE": 3, "ES": 3, "JP": 2, "LB": 2, "MA": 2, "RU": 2, "TH": 2, "ZA": 2, "BR": 2, "AZ": 2, "DK": 2, "HU": 2, "IE": 2, "IL": 2, "CO": 1, "CZ": 1, "DZ": 1, "BH": 1, "IR": 1, "KR": 1, "KW": 1, "KZ": 1, "LY": 1, "NL": 1, "PE": 1, "PS": 1, "RO": 1, "TN": 1, "TR": 1, "YE": 1}, "CY": {"GR": 50, "US": 36, "GB": 34, "TR": 27, "FR": 14, "CH": 12, "DE": 12, "ES": 12, "IT": 12, "AU": 7, "JP": 7, "NO": 7, "CA": 6, "ZA": 6, "BR": 5, "DK": 5, "PT": 5, "NL": 4, "PK": 4, "IN": 4, "SE": 4, "BE": 3, "PL": 3, "CN": 3, "SA": 2, "FI": 2, "AE": 2, "IL": 2, "VN": 2, "LB": 2, "IR": 2, "MY": 2, "EE": 2, "BG": 2, "HU": 1, "IE": 1, "KG": 1, "KH": 1, "KR": 1, "KW": 1, "LV": 1, "MD": 1, "MK": 1, "NG": 1, "RS": 1, "SI": 1, "UY": 1, "CL": 1, "BA": 1, "AT": 1, "AR": 1, "AG": 1}, "IS": {"US": 48, "NL": 26, "GB": 25, "SE": 24, "DK": 21, "AU": 21, "DE": 20, "IT": 17, "CH": 14, "CA": 14, "FR": 14, "FI": 14, "ES": 14, "CN": 13, "AT": 11, "NO": 9, "JP": 9, "EE": 6, "TH": 6, "KR": 4, "IN": 4, "SG": 3, "GR": 3, "BE": 3, "CZ": 2, "PK": 2, "PL": 2, "PT": 2, "ZA": 2, "BR": 1, "HU": 1, "IE": 1, "IL": 1, "IR": 1, "KH": 1, "NG": 1, "RS": 1, "TR": 1, "TW": 1}, "SK": {"US": 47, "DE": 43, "CZ": 37, "IT": 27, "GB": 24, "PL": 17, "AT": 16, "NL": 16, "ES": 13, "CH": 13, "BE": 11, "SE": 9, "FR": 9, "RS": 9, "DK": 8, "CA": 8, "BR": 7, "AU": 6, "GR": 6, "HU": 6, "NO": 6, "RO": 5, "CN": 5, "SG": 5, "KR": 4, "IL": 4, "FI": 3, "IN": 3, "IR": 3, "BG": 3, "QA": 3, "RU": 3, "JP": 2, "MK": 2, "NG": 2, "PE": 2, "PT": 2, "ID": 2, "SA": 2, "IE": 2, "TR": 2, "UA": 2, "EG": 1, "HR": 1, "IQ": 1, "BA": 1, "KE": 1, "LU": 1, "LV": 1, "MD": 1, "MT": 1, "MW": 1, "MY": 1, "AR": 1, "NZ": 1, "PK": 1, "TW": 1, "XK": 1, "ZA": 1, "CO": 1}, "ID": {"US": 46, "GB": 44, "JP": 39, "AU": 33, "MY": 32, "TW": 29, "KR": 28, "CN": 26, "NL": 23, "SG": 17, "IT": 16, "PK": 16, "FR": 13, "DE": 11, "SA": 11, "IN": 11, "TH": 10, "CA": 10, "EG": 10, "JO": 9, "TR": 8, "ES": 8, "BD": 7, "CH": 6, "PL": 5, "BR": 5, "BE": 5, "BN": 5, "CO": 5, "AT": 4, "VN": 4, "FI": 4, "DK": 3, "LB": 3, "MA": 3, "MX": 3, "NO": 3, "NP": 3, "NZ": 3, "PE": 3, "RU": 3, "AE": 2, "GH": 2, "IE": 2, "IQ": 2, "IR": 2, "PH": 2, "PT": 2, "SK": 2, "TN": 2, "CZ": 1, "DZ": 1, "GR": 1, "HR": 1, "HU": 1, "IL": 1, "KE": 1, "KW": 1, "KZ": 1, "LA": 1, "MD": 1, "MK": 1, "MR": 1, "RS": 1, "SD": 1, "SE": 1, "YE": 1, "AL": 1}, "AG": {"TR": 44, "US": 8, "CO": 6, "IR": 3, "KH": 2, "IN": 2, "KZ": 1, "KY": 1, "GD": 1, "GB": 1, "ES": 1, "CY": 1}, "GE": {"US": 44, "CN": 7, "PL": 3, "GB": 2, "CH": 2, "IN": 2, "IT": 2, "RU": 2, "TR": 2, "ES": 2, "CZ": 1, "DE": 1, "DK": 1, "EE": 1, "EG": 1, "BY": 1, "FR": 1, "HR": 1, "IR": 1, "LB": 1, "LT": 1, "PE": 1, "RO": 1, "SA": 1, "TW": 1, "BG": 1, "AZ": 1, "AT": 1}, "KE": {"US": 43, "GB": 21, "ZA": 19, "AU": 10, "CH": 9, "UG": 8, "JP": 7, "GH": 7, "CN": 7, "CA": 6, "FR": 6, "NL": 6, "BE": 5, "ES": 4, "NG": 4, "PL": 4, "SE": 4, "DE": 4, "CZ": 3, "IL": 3, "TZ": 3, "IT": 3, "IN": 3, "IR": 2, "LV": 2, "MY": 2, "NO": 2, "NZ": 2, "PT": 2, "SA": 2, "BR": 2, "EG": 2, "DK": 2, "ET": 2, "BF": 2, "CO": 1, "CL": 1, "DZ": 1, "EC": 1, "CD": 1, "FI": 1, "GR": 1, "HR": 1, "HU": 1, "ID": 1, "IE": 1, "BD": 1, "KR": 1, "LK": 1, "MD": 1, "MN": 1, "MW": 1, "MX": 1, "NaN": 1, "NP": 1, "PE": 1, "PH": 1, "PK": 1, "PS": 1, "RO": 1, "RU": 1, "SG": 1, "SK": 1, "SL": 1, "SO": 1, "TN": 1, "VE": 1, "VN": 1, "AT": 1, "AR": 1}, "UG": {"US": 42, "GB": 19, "CA": 10, "ZA": 9, "KE": 8, "DE": 5, "IN": 5, "NL": 5, "NG": 4, "KR": 4, "CH": 4, "SE": 4, "AU": 3, "BE": 2, "BD": 2, "TZ": 2, "CG": 2, "GH": 2, "MW": 2, "NO": 2, "PK": 2, "PL": 2, "CN": 1, "DK": 1, "TH": 1, "CD": 1, "ES": 1, "BT": 1, "FR": 1, "GM": 1, "GN": 1, "GR": 1, "TT": 1, "IR": 1, "IT": 1, "MN": 1, "VN": 1, "MX": 1, "ZW": 1, "NP": 1, "RU": 1, "RW": 1, "SO": 1, "SS": 1, "CO": 1}, "UA": {"US": 35, "PL": 28, "DE": 24, "RU": 19, "IT": 17, "GB": 10, "FR": 9, "RO": 8, "AT": 7, "IL": 7, "SE": 7, "CZ": 7, "ES": 7, "CH": 6, "CN": 6, "JP": 4, "GR": 4, "ZA": 4, "BE": 4, "DK": 3, "NO": 3, "PT": 3, "AU": 3, "IN": 2, "FI": 2, "KZ": 2, "NG": 2, "CA": 2, "NL": 2, "HR": 2, "HU": 2, "RS": 2, "IE": 2, "SK": 2, "TJ": 1, "TR": 1, "BR": 1, "GH": 1, "IR": 1, "KG": 1, "KR": 1, "LT": 1, "PK": 1, "SA": 1, "SG": 1, "SI": 1, "CO": 1}, "PH": {"US": 35, "GB": 13, "CN": 13, "KR": 11, "CA": 10, "AU": 9, "TW": 8, "JP": 8, "NZ": 5, "MX": 5, "IN": 4, "IT": 4, "SG": 3, "TH": 3, "ZA": 3, "BR": 3, "FR": 3, "BD": 2, "MY": 2, "NL": 2, "ES": 2, "ZM": 2, "ID": 2, "IE": 2, "DE": 1, "EG": 1, "FJ": 1, "GH": 1, "HN": 1, "BE": 1, "IQ": 1, "BB": 1, "KE": 1, "MM": 1, "NP": 1, "AR": 1, "QA": 1, "SA": 1, "TR": 1, "CO": 1}, "EC": {"ES": 35, "US": 33, "BR": 17, "MX": 10, "GB": 10, "IT": 8, "FR": 8, "CL": 8, "DE": 7, "CA": 7, "AR": 6, "CO": 6, "IN": 5, "PE": 4, "PK": 4, "CN": 4, "VE": 4, "BE": 4, "PT": 3, "CH": 3, "NL": 2, "PL": 2, "RU": 2, "UY": 2, "ZA": 2, "AU": 2, "AT": 2, "DK": 1, "DZ": 1, "GR": 1, "GT": 1, "HU": 1, "IL": 1, "IR": 1, "KE": 1, "MA": 1, "MN": 1, "NaN": 1, "PS": 1, "QA": 1, "RO": 1, "RS": 1, "SE": 1, "TN": 1, "TR": 1, "BD": 1}, "UY": {"US": 35, "BR": 29, "ES": 15, "DE": 12, "GB": 12, "AR": 10, "CL": 10, "PT": 7, "CO": 7, "CA": 6, "IT": 6, "IN": 5, "FR": 4, "CH": 4, "MX": 3, "NL": 3, "AU": 3, "BE": 3, "EC": 2, "JP": 2, "CN": 2, "BO": 2, "PA": 2, "SG": 2, "CU": 2, "CY": 1, "DK": 1, "EG": 1, "FI": 1, "GR": 1, "GT": 1, "BG": 1, "IL": 1, "BB": 1, "KW": 1, "MD": 1, "PE": 1, "VN": 1, "PY": 1, "RU": 1, "SI": 1, "SN": 1, "CR": 1}, "TN": {"FR": 33, "US": 24, "SA": 21, "ES": 12, "AU": 10, "EG": 10, "IT": 9, "DZ": 8, "CN": 6, "DE": 6, "QA": 6, "LB": 5, "PT": 5, "TR": 5, "BR": 5, "CA": 4, "PL": 4, "CH": 4, "GR": 3, "BD": 3, "MY": 3, "BE": 3, "RO": 3, "GB": 3, "IN": 2, "IQ": 2, "IR": 2, "MA": 2, "NO": 2, "ID": 2, "TH": 1, "CL": 1, "EC": 1, "VE": 1, "YE": 1, "ZA": 1, "FI": 1, "BJ": 1, "HU": 1, "IE": 1, "IL": 1, "JO": 1, "KE": 1, "KR": 1, "KW": 1, "MN": 1, "MQ": 1, "MX": 1, "NaN": 1, "NG": 1, "AR": 1, "OM": 1, "PS": 1, "RU": 1, "SE": 1, "SI": 1}, "LU": {"DE": 33, "IT": 26, "US": 24, "GB": 24, "FR": 19, "BE": 13, "DK": 11, "CN": 9, "SE": 9, "NL": 8, "ES": 7, "CA": 5, "CH": 5, "PT": 5, "BR": 5, "NO": 5, "AU": 4, "CL": 3, "FI": 3, "IL": 3, "PL": 3, "JP": 3, "HU": 3, "IN": 2, "KR": 2, "GR": 2, "AT": 2, "FO": 1, "IR": 1, "BD": 1, "LT": 1, "MT": 1, "NG": 1, "RE": 1, "RO": 1, "SK": 1, "TW": 1, "ZA": 1}, "TJ": {"RU": 29, "US": 5, "DE": 3, "CZ": 1, "CL": 1, "DK": 1, "TR": 1, "UA": 1, "CA": 1, "FR": 1, "GR": 1, "HR": 1, "IT": 1, "KR": 1}, "MA": {"FR": 25, "CA": 15, "EG": 15, "IT": 12, "US": 12, "TR": 9, "SA": 8, "ES": 7, "GB": 7, "RO": 7, "AU": 5, "IR": 5, "DE": 5, "CH": 4, "KR": 4, "LK": 3, "IN": 3, "MY": 3, "NL": 3, "PK": 3, "CN": 3, "SE": 3, "ID": 3, "ZA": 3, "DK": 3, "IQ": 2, "BD": 2, "CM": 2, "JO": 2, "JP": 2, "LB": 2, "NG": 2, "PS": 2, "PT": 2, "TN": 2, "GR": 2, "AE": 2, "CO": 1, "CL": 1, "DZ": 1, "EC": 1, "BR": 1, "HR": 1, "IL": 1, "KW": 1, "MX": 1, "RS": 1, "TH": 1, "VN": 1, "AT": 1}, "EE": {"GB": 25, "SE": 21, "FI": 21, "US": 19, "DE": 16, "NL": 14, "AU": 13, "IT": 10, "NO": 9, "FR": 9, "ES": 9, "CN": 8, "CH": 7, "DK": 7, "IN": 6, "IS": 6, "CA": 5, "AT": 5, "BE": 5, "PL": 4, "PK": 3, "SG": 3, "LT": 3, "JP": 3, "PT": 2, "RU": 2, "VN": 2, "BR": 2, "CZ": 2, "CY": 2, "BG": 2, "GE": 1, "GR": 1, "HR": 1, "IE": 1, "IR": 1, "KR": 1, "NG": 1, "TR": 1, "TT": 1, "TW": 1, "BD": 1}, "GD": {"US": 24, "SA": 5, "IT": 5, "JP": 4, "PK": 3, "GB": 2, "PL": 2, "DE": 1, "FR": 1, "BR": 1, "IN": 1, "KY": 1, "TH": 1, "AG": 1}, "LK": {"AU": 23, "GB": 12, "US": 12, "CA": 9, "KR": 8, "IT": 4, "CN": 4, "MY": 4, "DE": 4, "MA": 3, "PL": 3, "SG": 3, "JP": 3, "IN": 3, "GR": 2, "ES": 2, "DK": 1, "FR": 1, "BR": 1, "BD": 1, "KE": 1, "NO": 1, "NP": 1, "NZ": 1, "VN": 1, "AT": 1}, "KZ": {"TR": 22, "RU": 15, "US": 12, "IT": 7, "CA": 6, "ES": 6, "IR": 5, "FR": 4, "NO": 4, "GB": 3, "JP": 3, "IN": 2, "BR": 2, "KR": 2, "CH": 2, "LT": 2, "PL": 2, "UA": 2, "GR": 2, "AU": 2, "BY": 2, "CN": 1, "DE": 1, "DK": 1, "EG": 1, "FI": 1, "ID": 1, "BG": 1, "BE": 1, "JO": 1, "KG": 1, "AZ": 1, "NG": 1, "NL": 1, "OM": 1, "QA": 1, "SA": 1, "SI": 1, "UZ": 1, "AM": 1, "AG": 1, "AE": 1}, "BG": {"US": 22, "DE": 20, "IT": 20, "GB": 14, "FR": 12, "PL": 12, "ES": 11, "RU": 10, "BE": 6, "GR": 6, "RO": 6, "NZ": 5, "CZ": 5, "NL": 4, "IN": 4, "CN": 4, "MX": 3, "JP": 3, "HU": 3, "HR": 3, "AT": 3, "CH": 3, "CA": 3, "BR": 3, "ZA": 3, "SK": 3, "PT": 3, "AU": 2, "TR": 2, "SE": 2, "RS": 2, "NO": 2, "IR": 2, "EE": 2, "DK": 2, "CY": 2, "XK": 1, "UY": 1, "TW": 1, "SI": 1, "OM": 1, "NG": 1, "LT": 1, "KZ": 1, "KW": 1, "KR": 1, "IQ": 1, "IL": 1, "GE": 1, "FI": 1, "DZ": 1, "CO": 1, "BA": 1, "AR": 1}, "IQ": {"GB": 22, "SA": 20, "MY": 18, "EG": 15, "US": 15, "CZ": 13, "IR": 11, "IN": 10, "PK": 9, "CN": 8, "AE": 7, "ES": 6, "JO": 4, "KR": 4, "NO": 4, "CA": 4, "FR": 3, "IT": 3, "OM": 3, "DE": 3, "BD": 3, "SE": 3, "KW": 2, "MA": 2, "MX": 2, "NG": 2, "PL": 2, "TN": 2, "TR": 2, "ZA": 2, "AU": 2, "ID": 2, "ET": 2, "CO": 1, "DZ": 1, "CH": 1, "BR": 1, "GH": 1, "GR": 1, "BG": 1, "LB": 1, "LT": 1, "NL": 1, "PH": 1, "PT": 1, "RO": 1, "RU": 1, "SG": 1, "SK": 1, "SN": 1, "SY": 1, "TH": 1, "BE": 1, "UZ": 1, "XK": 1, "YE": 1, "BA": 1}, "LT": {"US": 21, "ES": 13, "SE": 12, "PL": 12, "IT": 9, "DE": 9, "GB": 8, "AT": 7, "LV": 6, "PT": 6, "BE": 5, "CA": 4, "SA": 4, "CZ": 3, "HR": 3, "NO": 3, "RS": 3, "RU": 3, "CH": 3, "EE": 3, "FI": 2, "FR": 2, "KZ": 2, "NL": 2, "PK": 2, "TW": 2, "DK": 2, "HU": 2, "CN": 2, "AE": 2, "CO": 1, "EG": 1, "BR": 1, "GE": 1, "BG": 1, "IE": 1, "IN": 1, "IQ": 1, "JP": 1, "LU": 1, "NZ": 1, "RO": 1, "SI": 1, "TR": 1, "UA": 1, "ZA": 1}, "AZ": {"US": 21, "CA": 18, "AU": 6, "GB": 5, "TR": 4, "IR": 4, "BR": 3, "RU": 2, "JO": 2, "CH": 2, "PL": 1, "NZ": 1, "NL": 1, "KZ": 1, "KR": 1, "KH": 1, "IT": 1, "IE": 1, "GE": 1, "FR": 1, "EG": 1, "DE": 1, "CN": 1, "AE": 1}, "CR": {"US": 20, "ES": 16, "CL": 8, "BR": 6, "MX": 6, "FR": 4, "CO": 3, "CN": 2, "BE": 2, "AU": 2, "AR": 2, "DE": 2, "GB": 2, "NL": 2, "CA": 1, "CU": 1, "GT": 1, "IR": 1, "IT": 1, "JP": 1, "PA": 1, "PT": 1, "UY": 1}, "LV": {"DE": 20, "IT": 12, "US": 9, "SE": 8, "ES": 8, "LT": 6, "BE": 5, "GB": 5, "PL": 5, "HU": 4, "FR": 4, "NL": 4, "IN": 4, "DK": 3, "NO": 3, "CN": 3, "KE": 2, "CH": 2, "PT": 2, "TW": 2, "ZA": 2, "AU": 2, "GR": 2, "AT": 2, "CY": 1, "CZ": 1, "CA": 1, "FI": 1, "BR": 1, "HR": 1, "IL": 1, "IR": 1, "MK": 1, "RO": 1, "RU": 1, "SA": 1, "SK": 1}, "BA": {"RS": 20, "GB": 8, "IT": 8, "ES": 6, "FR": 4, "NL": 4, "AT": 3, "DK": 3, "TR": 3, "NO": 3, "CH": 3, "DE": 3, "RU": 2, "IE": 2, "HR": 2, "GR": 2, "CZ": 2, "AU": 2, "ZA": 1, "XK": 1, "US": 1, "SK": 1, "SI": 1, "SE": 1, "SA": 1, "RO": 1, "QA": 1, "NG": 1, "KR": 1, "IQ": 1, "CY": 1, "CN": 1, "BR": 1, "BG": 1, "BE": 1, "AE": 1}, "ZM": {"US": 19, "GB": 7, "ZA": 7, "CA": 5, "DE": 5, "GH": 4, "AU": 2, "CD": 2, "PH": 2, "CN": 1, "EG": 1, "ES": 1, "BR": 1, "FR": 1, "TR": 1, "BE": 1, "IN": 1, "IT": 1, "JP": 1, "AT": 1, "NP": 1, "OM": 1, "PL": 1, "QA": 1, "RW": 1, "AE": 1, "SA": 1}, "CM": {"US": 17, "ZA": 5, "GB": 4, "BE": 3, "FR": 3, "NG": 2, "MA": 2, "EG": 2, "DE": 2, "CN": 2, "SE": 1, "PT": 1, "NL": 1, "MW": 1, "MG": 1, "CH": 1, "CD": 1, "CA": 1, "BF": 1}, "OM": {"IN": 17, "SA": 13, "CA": 10, "GB": 10, "US": 10, "PK": 8, "MY": 8, "AE": 6, "AU": 6, "EG": 6, "QA": 5, "JO": 4, "IR": 4, "ET": 3, "DE": 3, "AT": 3, "NL": 3, "KR": 3, "RO": 3, "PL": 3, "IQ": 3, "IT": 3, "FR": 2, "BR": 2, "CN": 2, "ES": 2, "SE": 2, "TR": 2, "TW": 2, "GR": 1, "HR": 1, "BG": 1, "BE": 1, "BD": 1, "JP": 1, "KZ": 1, "LB": 1, "RU": 1, "TH": 1, "TN": 1, "VE": 1, "ZA": 1, "ZM": 1}, "BY": {"RU": 17, "KR": 16, "US": 10, "PL": 7, "AU": 4, "DE": 4, "CN": 4, "FR": 4, "NL": 4, "NZ": 3, "GB": 2, "ES": 2, "DK": 2, "BE": 2, "UZ": 2, "KZ": 2, "PT": 1, "MX": 1, "KG": 1, "GE": 1, "CZ": 1, "BR": 1, "AT": 1, "AM": 1}, "KW": {"US": 17, "IN": 12, "EG": 10, "SA": 8, "GB": 8, "AU": 6, "CA": 5, "ES": 4, "BR": 4, "IT": 4, "FR": 4, "CN": 4, "IR": 4, "FI": 3, "LB": 3, "GH": 3, "IQ": 2, "JP": 2, "VN": 2, "GR": 2, "ET": 2, "CO": 2, "IL": 2, "CY": 1, "CZ": 1, "DE": 1, "DK": 1, "DZ": 1, "BW": 1, "ID": 1, "BG": 1, "BE": 1, "JO": 1, "KR": 1, "MA": 1, "MD": 1, "MY": 1, "PK": 1, "PT": 1, "SE": 1, "TN": 1, "TR": 1, "UY": 1, "XK": 1, "AE": 1}, "JM": {"US": 16, "CA": 7, "GB": 4, "DE": 2, "IR": 2, "BW": 2, "VN": 2, "AU": 2, "DK": 2, "CL": 1, "ET": 1, "BR": 1, "GH": 1, "IE": 1, "BB": 1, "KR": 1, "TH": 1, "TR": 1}, "TZ": {"US": 16, "GB": 13, "ZA": 9, "CH": 7, "NL": 5, "IN": 4, "CA": 4, "AU": 4, "DE": 4, "FR": 3, "NO": 3, "SE": 3, "CN": 3, "KE": 3, "UG": 2, "MX": 2, "ET": 2, "DK": 1, "ES": 1, "BT": 1, "BR": 1, "GA": 1, "GH": 1, "TT": 1, "BE": 1, "IT": 1, "KN": 1, "MN": 1, "MZ": 1, "NP": 1, "PK": 1, "RU": 1, "RW": 1, "SA": 1}, "MW": {"GB": 16, "US": 11, "CH": 4, "ZA": 4, "IN": 3, "NO": 3, "SE": 3, "AU": 3, "DE": 3, "FI": 2, "FR": 2, "UG": 2, "CN": 2, "CA": 2, "CZ": 1, "CM": 1, "ES": 1, "ET": 1, "BR": 1, "GH": 1, "BH": 1, "BF": 1, "KE": 1, "KH": 1, "MU": 1, "NG": 1, "NL": 1, "RO": 1, "RU": 1, "RW": 1, "SD": 1, "SG": 1, "SK": 1, "TH": 1, "AT": 1}, "MT": {"IT": 15, "AU": 10, "GB": 8, "US": 7, "BE": 6, "NL": 5, "BR": 5, "ES": 5, "FR": 5, "DE": 4, "SE": 3, "CA": 3, "AR": 3, "JP": 3, "IN": 2, "FI": 2, "CH": 2, "NO": 2, "PT": 2, "RU": 2, "TW": 2, "DK": 2, "IE": 2, "CZ": 1, "HR": 1, "IL": 1, "LU": 1, "PL": 1, "RO": 1, "SI": 1, "SK": 1}, "AL": {"IT": 15, "CH": 4, "ES": 2, "AE": 1, "SE": 1, "PT": 1, "NL": 1, "IN": 1, "ID": 1, "GB": 1, "DE": 1}, "YE": {"SA": 14, "CN": 8, "PK": 5, "GB": 5, "EG": 4, "TW": 3, "IE": 3, "MY": 3, "IN": 2, "IR": 2, "TH": 1, "CA": 1, "TN": 1, "BR": 1, "HU": 1, "ID": 1, "IQ": 1, "JO": 1, "AU": 1, "KR": 1, "AE": 1}, "BH": {"IR": 14, "AU": 10, "GB": 6, "US": 4, "SA": 4, "IT": 3, "IN": 3, "GR": 3, "CH": 3, "SE": 3, "AE": 2, "PK": 2, "IE": 2, "CA": 2, "PL": 1, "NO": 1, "MY": 1, "MW": 1, "MM": 1, "JO": 1, "HU": 1, "GH": 1, "EG": 1, "CZ": 1, "CN": 1}, "AM": {"RU": 12, "DE": 6, "US": 4, "IT": 2, "FR": 2, "UZ": 1, "SE": 1, "KZ": 1, "KG": 1, "IN": 1, "GB": 1, "ES": 1, "DK": 1, "BY": 1, "AT": 1}, "ZW": {"GB": 10, "ZA": 9, "US": 8, "CH": 4, "SE": 3, "VN": 2, "IT": 2, "CA": 2, "NL": 2, "CZ": 1, "DK": 1, "CG": 1, "FR": 1, "TT": 1, "BE": 1, "AU": 1, "UG": 1, "PK": 1, "PT": 1, "RU": 1}, "SY": {"US": 10, "LB": 4, "DE": 4, "EG": 4, "JO": 3, "GB": 2, "RU": 2, "SA": 2, "SE": 2, "VN": 1, "CN": 1, "CA": 1, "IQ": 1, "JP": 1, "AU": 1, "MY": 1, "CO": 1}, "BF": {"FR": 10, "CA": 5, "US": 4, "NL": 4, "GB": 4, "DE": 4, "BE": 2, "ZA": 2, "NO": 2, "KE": 2, "IT": 2, "VN": 1, "SN": 1, "SE": 1, "NG": 1, "MW": 1, "JP": 1, "GH": 1, "CM": 1, "AU": 1}, "ST": {"BR": 10, "ES": 1, "GB": 1, "US": 1}, "PA": {"US": 10, "ES": 6, "BR": 4, "MX": 4, "CN": 3, "CL": 3, "IT": 2, "FR": 2, "KR": 2, "GB": 2, "UY": 2, "VE": 2, "CU": 1, "DE": 1, "DK": 1, "FI": 1, "GR": 1, "GT": 1, "HN": 1, "BE": 1, "AU": 1, "NE": 1, "NL": 1, "AR": 1, "PT": 1, "PY": 1, "SE": 1, "SG": 1, "CO": 1, "CR": 1}, "BO": {"US": 10, "GB": 7, "MX": 4, "CO": 4, "CL": 4, "CA": 3, "BR": 3, "AU": 3, "UY": 2, "IT": 2, "FR": 2, "PK": 1, "IR": 1, "IN": 1, "CZ": 1, "CN": 1}, "PY": {"CL": 10, "US": 8, "ES": 8, "MX": 5, "AU": 5, "BR": 4, "GB": 4, "IT": 2, "DE": 2, "PT": 2, "SG": 2, "CH": 1, "EG": 1, "FR": 1, "KR": 1, "AR": 1, "PA": 1, "PE": 1, "RU": 1, "UY": 1, "VE": 1, "CO": 1}, "RW": {"US": 10, "SE": 3, "DE": 3, "GB": 2, "NL": 2, "RU": 2, "CN": 1, "CD": 1, "CA": 1, "ET": 1, "BR": 1, "GR": 1, "IN": 1, "IT": 1, "BB": 1, "JP": 1, "KR": 1, "MW": 1, "NG": 1, "QA": 1, "TZ": 1, "UG": 1, "ZA": 1, "ZM": 1}, "CU": {"US": 9, "BR": 9, "ES": 8, "CO": 5, "DE": 5, "CA": 5, "IT": 4, "NL": 4, "BE": 4, "AU": 3, "CN": 2, "CH": 2, "CL": 2, "IN": 2, "MX": 2, "UY": 2, "GT": 1, "IE": 1, "MY": 1, "PA": 1, "SE": 1, "SG": 1, "TH": 1, "TW": 1, "ZA": 1, "AT": 1, "AR": 1, "CR": 1, "DK": 1, "FI": 1, "FR": 1, "GB": 1}, "BN": {"PK": 9, "MY": 7, "CN": 6, "ID": 5, "JO": 4, "US": 3, "TR": 2, "SA": 2, "JP": 2, "GB": 2, "SG": 1, "RO": 1, "PL": 1, "NL": 1, "IN": 1, "FR": 1, "EG": 1, "DK": 1}, "RE": {"FR": 9, "DE": 3, "CA": 1, "IT": 1, "LU": 1, "AT": 1}, "SD": {"SA": 9, "PK": 6, "EG": 5, "DE": 4, "SE": 4, "US": 4, "GB": 3, "IT": 3, "BR": 2, "CN": 1, "CA": 1, "ES": 1, "GR": 1, "ID": 1, "BE": 1, "KR": 1, "MW": 1, "AT": 1, "NO": 1, "PL": 1, "QA": 1, "SN": 1, "TR": 1, "TW": 1, "UZ": 1, "AE": 1}, "AO": {"BR": 9, "US": 2, "VN": 1, "TH": 1, "PT": 1, "GR": 1, "GH": 1, "DE": 1, "CN": 1, "BE": 1}, "GM": {"GB": 9, "US": 4, "NG": 3, "ZA": 3, "CL": 1, "CI": 1, "ES": 1, "FR": 1, "BR": 1, "UG": 1}, "GT": {"MX": 8, "US": 8, "CO": 6, "BR": 5, "CA": 4, "AR": 3, "ES": 3, "CH": 2, "CL": 2, "PT": 2, "CU": 1, "EC": 1, "FR": 1, "GB": 1, "IN": 1, "IT": 1, "JP": 1, "NG": 1, "NL": 1, "PA": 1, "PE": 1, "UY": 1, "CR": 1}, "BW": {"US": 8, "CN": 5, "ZA": 4, "DK": 3, "VN": 2, "JM": 2, "IR": 2, "GB": 2, "ET": 2, "DE": 2, "SE": 1, "NG": 1, "KW": 1, "IN": 1, "GH": 1, "CA": 1, "BR": 1, "BJ": 1, "BE": 1, "AU": 1}, "DZ": {"TN": 8, "FR": 8, "IR": 6, "ES": 5, "US": 5, "PT": 4, "CA": 3, "EG": 3, "GB": 2, "CN": 2, "RU": 2, "DE": 2, "CL": 1, "EC": 1, "HU": 1, "ID": 1, "IL": 1, "IQ": 1, "IT": 1, "JO": 1, "JP": 1, "KE": 1, "KW": 1, "LB": 1, "MA": 1, "MN": 1, "MX": 1, "NaN": 1, "PK": 1, "PS": 1, "RO": 1, "SA": 1, "TR": 1, "VE": 1, "ZA": 1, "CH": 1, "BR": 1, "BG": 1, "AE": 1, "AU": 1, "AR": 1}, "MK": {"ES": 8, "PT": 6, "GB": 5, "GR": 4, "DE": 4, "NL": 4, "RS": 4, "US": 4, "AU": 3, "PL": 3, "FR": 3, "CA": 3, "IT": 3, "BE": 3, "DK": 3, "FI": 2, "MY": 2, "RO": 2, "RU": 2, "SE": 2, "SG": 2, "SK": 2, "TR": 2, "TW": 2, "ZA": 2, "AT": 2, "CN": 2, "HU": 2, "CY": 1, "CZ": 1, "CH": 1, "BR": 1, "HR": 1, "ID": 1, "IL": 1, "IN": 1, "LV": 1, "NO": 1, "PK": 1, "QA": 1}, "MZ": {"BR": 8, "US": 4, "ES": 3, "DE": 3, "GB": 2, "PT": 2, "CA": 1, "ET": 1, "GA": 1, "IT": 1, "NG": 1, "NL": 1, "SE": 1, "TZ": 1, "ZA": 1}, "MC": {"FR": 7, "AU": 5, "US": 3, "DE": 2, "IT": 2, "CN": 1, "FI": 1, "PF": 1, "SE": 1}, "MN": {"BR": 7, "CN": 7, "GB": 5, "US": 5, "NL": 3, "PT": 3, "CH": 3, "DE": 2, "JP": 2, "KR": 2, "MX": 2, "ZA": 2, "CL": 2, "HU": 2, "DZ": 1, "EC": 1, "ES": 1, "CA": 1, "FR": 1, "BT": 1, "IL": 1, "IR": 1, "KE": 1, "AU": 1, "NaN": 1, "NP": 1, "PS": 1, "RO": 1, "RU": 1, "SE": 1, "TN": 1, "TT": 1, "TW": 1, "TZ": 1, "UG": 1, "VE": 1, "AR": 1}, "BJ": {"AU": 6, "US": 4, "GB": 4, "CA": 3, "IE": 2, "ES": 2, "DE": 2, "CZ": 2, "CL": 2, "TN": 1, "GH": 1, "FR": 1, "CH": 1, "BW": 1, "BE": 1}, "KN": {"BE": 6, "IE": 5, "ZA": 5, "PL": 3, "DE": 2, "GB": 2, "BR": 2, "CN": 1, "CA": 1, "IN": 1, "NO": 1, "RO": 1, "TZ": 1, "US": 1}, "PS": {"ES": 6, "US": 6, "GB": 4, "SG": 4, "DE": 3, "SA": 3, "FR": 3, "IN": 2, "JP": 2, "MA": 2, "CN": 2, "CA": 2, "IL": 2, "CL": 1, "CH": 1, "DZ": 1, "EC": 1, "EG": 1, "BR": 1, "HU": 1, "IE": 1, "BE": 1, "IR": 1, "IT": 1, "JO": 1, "KE": 1, "LB": 1, "AU": 1, "MN": 1, "MX": 1, "NaN": 1, "AR": 1, "PL": 1, "PT": 1, "QA": 1, "RO": 1, "TN": 1, "VE": 1, "ZA": 1}, "VE": {"US": 6, "CL": 5, "CO": 5, "MX": 4, "JP": 4, "ES": 4, "EC": 4, "AR": 3, "BR": 2, "PA": 2, "CN": 1, "DE": 1, "CH": 1, "DZ": 1, "TN": 1, "CA": 1, "FR": 1, "GB": 1, "HU": 1, "IL": 1, "IN": 1, "IR": 1, "KE": 1, "KR": 1, "AU": 1, "MN": 1, "NaN": 1, "NL": 1, "OM": 1, "PS": 1, "ZA": 1, "PT": 1, "PY": 1, "RO": 1}, "NE": {"IT": 5, "GB": 3, "FR": 2, "ES": 2, "BR": 1, "HR": 1, "PA": 1, "SE": 1, "SG": 1, "US": 1}, "CD": {"BE": 5, "GB": 5, "US": 4, "DE": 3, "NZ": 3, "BR": 2, "ZM": 2, "ZA": 2, "SE": 2, "PK": 2, "DK": 2, "CA": 2, "UG": 1, "RW": 1, "NG": 1, "KE": 1, "JP": 1, "IT": 1, "GH": 1, "FR": 1, "ET": 1, "CM": 1, "CH": 1}, "MD": {"DE": 5, "US": 3, "IT": 3, "FI": 2, "JP": 2, "BR": 2, "GB": 2, "PT": 2, "RU": 2, "ES": 2, "CA": 2, "CN": 2, "CO": 1, "CY": 1, "CZ": 1, "DK": 1, "CH": 1, "EG": 1, "FR": 1, "GR": 1, "HR": 1, "ID": 1, "IL": 1, "BE": 1, "IR": 1, "KE": 1, "KR": 1, "KW": 1, "MY": 1, "NL": 1, "NO": 1, "NZ": 1, "PE": 1, "PL": 1, "SE": 1, "SK": 1, "UY": 1, "VN": 1, "AU": 1, "AT": 1}, "UZ": {"CN": 5, "US": 4, "CZ": 4, "RU": 3, "PL": 3, "KR": 2, "BY": 2, "EG": 1, "BE": 1, "IN": 1, "IQ": 1, "KG": 1, "KZ": 1, "AM": 1, "SA": 1, "SD": 1}, "GW": {"DK": 5, "NL": 1}, "GN": {"FR": 5, "CH": 2, "NG": 2, "DE": 1, "GB": 1, "PT": 1, "SG": 1, "SN": 1, "TD": 1, "UG": 1, "BE": 1}, "DO": {"US": 5, "MX": 3, "AU": 2, "GB": 2, "CN": 1, "CL": 1, "ES": 1, "TW": 1, "CA": 1}, "SN": {"FR": 5, "BE": 2, "GB": 2, "MY": 2, "CA": 2, "US": 2, "CH": 1, "GN": 1, "BF": 1, "IQ": 1, "AU": 1, "NG": 1, "SD": 1, "SG": 1, "TD": 1, "UY": 1}, "GL": {"DK": 4, "US": 1}, "GP": {"FR": 4, "CA": 2, "IT": 1, "MQ": 1}, "NI": {"US": 4, "ES": 2, "GB": 1, "PE": 1}, "KG": {"PK": 4, "RU": 4, "US": 3, "GB": 3, "CN": 3, "TR": 2, "CY": 1, "BY": 1, "BE": 1, "KR": 1, "KZ": 1, "UA": 1, "UZ": 1, "AU": 1, "AM": 1}, "ML": {"GB": 4, "FR": 4, "CH": 2, "BR": 2, "LA": 2, "TH": 2, "CN": 1, "ES": 1, "JP": 1, "AU": 1, "MR": 1, "US": 1, "ZA": 1}, "NaN": {"GB": 4, "ZA": 3, "US": 3, "DE": 2, "AU": 2, "CN": 2, "CL": 1, "DZ": 1, "CH": 1, "EC": 1, "ES": 1, "CA": 1, "FR": 1, "BR": 1, "HU": 1, "IL": 1, "IR": 1, "KE": 1, "MN": 1, "MX": 1, "NG": 1, "PS": 1, "PT": 1, "RO": 1, "TN": 1, "VE": 1, "AR": 1}, "TT": {"PK": 4, "IN": 2, "GB": 2, "US": 2, "CH": 1, "EE": 1, "CA": 1, "ET": 1, "BT": 1, "FR": 1, "TZ": 1, "UG": 1, "ZA": 1, "ZW": 1, "IT": 1, "AU": 1, "MN": 1, "MX": 1, "NP": 1, "SE": 1}, "SS": {"GB": 4, "IT": 2, "CH": 1, "AU": 1, "UG": 1, "US": 1}, "BB": {"US": 4, "GB": 4, "UY": 1, "SE": 1, "RW": 1, "PH": 1, "JM": 1, "IN": 1, "IE": 1, "ES": 1, "CH": 1, "CA": 1, "BS": 1, "AU": 1}, "MQ": {"FR": 4, "PF": 2, "GF": 1, "GP": 1, "BE": 1, "RO": 1, "TN": 1, "US": 1}, "SL": {"US": 4, "NG": 2, "ZA": 2, "ES": 1, "KE": 1}, "MM": {"AU": 4, "TH": 4, "US": 4, "IN": 2, "CN": 1, "CH": 1, "CA": 1, "BH": 1, "KR": 1, "MY": 1, "PH": 1, "SG": 1}, "FO": {"DK": 4, "GR": 2, "NO": 2, "ES": 1, "FI": 1, "LU": 1, "SE": 1, "ZA": 1, "AT": 1}, "FJ": {"AU": 3, "GB": 3, "US": 3, "IN": 2, "CA": 1, "MY": 1, "NL": 1, "PH": 1}, "CG": {"CH": 3, "US": 2, "UG": 2, "ZW": 1, "ZA": 1, "PK": 1, "NO": 1, "GB": 1, "FR": 1, "ES": 1, "CA": 1}, "BI": {"US": 3, "FR": 3, "GB": 2, "CH": 2, "MX": 1, "IT": 1, "IL": 1, "ES": 1, "DE": 1, "CA": 1}, "MU": {"US": 3, "IT": 2, "CN": 1, "DE": 1, "ES": 1, "CA": 1, "GB": 1, "GH": 1, "GR": 1, "IE": 1, "IN": 1, "AU": 1, "MW": 1, "NG": 1, "PT": 1, "TR": 1, "ZA": 1}, "HN": {"BR": 3, "ES": 2, "CO": 1, "CL": 1, "FR": 1, "NL": 1, "PA": 1, "PH": 1, "TW": 1, "US": 1}, "MV": {"IT": 3, "DE": 1, "GB": 1, "IN": 1, "KR": 1, "US": 1}, "GF": {"FR": 3, "MQ": 1}, "JE": {"DE": 2, "GB": 2, "IL": 2, "ES": 1, "CA": 1, "FR": 1, "GR": 1, "BE": 1, "JP": 1, "NL": 1, "PT": 1, "US": 1, "ZA": 1, "AU": 1}, "MG": {"FR": 2, "US": 2, "DE": 1, "CM": 1}, "BT": {"GB": 2, "US": 1, "UG": 1, "TZ": 1, "TT": 1, "NP": 1, "MX": 1, "MN": 1, "CH": 1}, "NC": {"FR": 2, "ES": 1}, "PF": {"FR": 2, "KR": 2, "MQ": 2, "US": 2, "CH": 1, "CA": 1, "BE": 1, "MC": 1}, "LA": {"BR": 2, "GB": 2, "ML": 2, "TH": 2, "CH": 1, "ID": 1, "KR": 1, "US": 1, "ZA": 1, "AU": 1}, "LY": {"GB": 2, "US": 2, "CH": 1, "JO": 1, "SA": 1, "TR": 1, "ZA": 1}, "XK": {"GB": 2, "CO": 2, "CZ": 1, "DE": 1, "ES": 1, "ZA": 1, "GR": 1, "BG": 1, "BE": 1, "IQ": 1, "BD": 1, "BA": 1, "KR": 1, "KW": 1, "NG": 1, "US": 1, "RO": 1, "RS": 1, "SI": 1, "SK": 1}, "PG": {"AU": 2, "US": 2, "PL": 1, "CA": 1, "GB": 1, "IN": 1, "NZ": 1}, "ME": {"RS": 2, "ES": 1, "HR": 1, "IR": 1}, "HT": {"US": 2, "CA": 1, "SE": 1}, "CI": {"FR": 2, "US": 1, "JP": 1, "GM": 1}, "SZ": {"US": 2, "DE": 1, "GB": 1}, "TO": {"RU": 2, "EG": 1}, "LC": {"ET": 2, "US": 1}, "GA": {"DE": 2, "CH": 1, "ES": 1, "FR": 1, "MZ": 1, "TZ": 1, "US": 1, "ZA": 1}, "AF": {"US": 2, "SA": 2, "SE": 1, "PK": 1, "IN": 1, "GB": 1, "FR": 1}, "SC": {"TW": 2, "ES": 1}, "CV": {"PT": 1}, "CW": {"NL": 1}, "SV": {"CN": 1, "DE": 1, "SE": 1, "US": 1}, "SO": {"CZ": 1, "EG": 1, "CA": 1, "KE": 1, "SA": 1, "TR": 1, "UG": 1, "US": 1}, "SB": {"DE": 1, "AU": 1, "US": 1}, "TD": {"CH": 1, "FR": 1, "GN": 1, "NG": 1, "SN": 1}, "SX": {"CA": 1, "GB": 1, "US": 1}, "FK": {"NZ": 1}, "MR": {"FR": 1, "ID": 1, "ML": 1, "QA": 1, "US": 1}, "BS": {"VN": 1, "US": 1, "SE": 1, "KR": 1, "JP": 1, "IE": 1, "GB": 1, "ES": 1, "EG": 1, "CH": 1, "CA": 1, "BB": 1, "AU": 1}, "TG": {"FR": 1}, "KY": {"GD": 1, "AG": 1}, "GY": {"US": 1}, "VC": {"IN": 1}, "AD": {"IT": 1}, "SR": {"NL": 1, "US": 1}, "WS": {"NZ": 1}};
+        const countryNames = {"US": "United States", "CN": "China", "GB": "United Kingdom", "CA": "Canada", "DE": "Germany", "AU": "Australia", "IT": "Italy", "FR": "France", "KR": "South Korea", "JP": "Japan", "NL": "Netherlands", "ES": "Spain", "IN": "India", "CH": "Switzerland", "BR": "Brazil", "SE": "Sweden", "AT": "Austria", "BE": "Belgium", "DK": "Denmark", "FI": "Finland", "GR": "Greece", "IE": "Ireland", "IL": "Israel", "NO": "Norway", "NZ": "New Zealand", "PL": "Poland", "PT": "Portugal", "RU": "Russia", "SG": "Singapore", "ZA": "South Africa", "TR": "Turkey", "MX": "Mexico", "AR": "Argentina", "CL": "Chile", "CO": "Colombia", "CZ": "Czech Republic", "HU": "Hungary", "TH": "Thailand", "MY": "Malaysia", "PH": "Philippines", "ID": "Indonesia", "VN": "Vietnam", "PK": "Pakistan", "BD": "Bangladesh", "EG": "Egypt", "SA": "Saudi Arabia", "AE": "UAE", "NG": "Nigeria", "KE": "Kenya", "GH": "Ghana", "TW": "Taiwan", "HK": "Hong Kong", "UA": "Ukraine", "RO": "Romania", "HR": "Croatia", "SI": "Slovenia", "SK": "Slovakia", "BG": "Bulgaria", "RS": "Serbia", "LT": "Lithuania", "LV": "Latvia", "EE": "Estonia", "IS": "Iceland", "LU": "Luxembourg", "MT": "Malta", "CY": "Cyprus"};
+        const iso3ToIso2 = {"USA": "US", "CHN": "CN", "GBR": "GB", "CAN": "CA", "DEU": "DE", "AUS": "AU", "ITA": "IT", "FRA": "FR", "KOR": "KR", "JPN": "JP", "NLD": "NL", "ESP": "ES", "IND": "IN", "CHE": "CH", "BRA": "BR", "SWE": "SE", "AUT": "AT", "BEL": "BE", "DNK": "DK", "FIN": "FI", "GRC": "GR", "IRL": "IE", "ISR": "IL", "NOR": "NO", "NZL": "NZ", "POL": "PL", "PRT": "PT", "RUS": "RU", "SGP": "SG", "ZAF": "ZA", "TUR": "TR", "MEX": "MX", "ARG": "AR", "CHL": "CL", "COL": "CO", "CZE": "CZ", "HUN": "HU", "THA": "TH", "MYS": "MY", "PHL": "PH", "IDN": "ID", "VNM": "VN", "PAK": "PK", "BGD": "BD", "EGY": "EG", "SAU": "SA", "ARE": "AE", "NGA": "NG", "KEN": "KE", "GHA": "GH", "TWN": "TW", "HKG": "HK", "UKR": "UA", "ROU": "RO", "HRV": "HR", "SVN": "SI", "SVK": "SK", "BGR": "BG", "SRB": "RS", "LTU": "LT", "LVA": "LV", "EST": "EE", "ISL": "IS", "LUX": "LU", "MLT": "MT", "CYP": "CY"};
+        const countryCounts = {"CN": 15607, "US": 45775, "GB": 23538, "CA": 12527, "DE": 16743, "AU": 11284, "IT": 13394, "FR": 10896, "KR": 4728, "JP": 5858, "NL": 9853, "ES": 10134, "IN": 5065, "CH": 7749, "BR": 5212, "SE": 5881, "DK": 4618, "BE": 4754, "TW": 2179, "IL": 2160, "AT": 3730, "PT": 3119, "SG": 2557, "TR": 2068, "NO": 2947, "PL": 2646, "IE": 1939, "EG": 1762, "SA": 2068, "MX": 1355, "IR": 1448, "GR": 2300, "RU": 1692, "FI": 2353, "ZA": 1525, "NZ": 1306, "TH": 811, "CZ": 1719, "PK": 1561, "CL": 1147, "AR": 1020, "CO": 871, "HU": 946, "PE": 432, "MY": 1193, "AE": 639, "LB": 382, "NG": 509, "QA": 533, "BD": 550, "VN": 437, "RS": 522, "ET": 302, "KH": 147, "SI": 433, "GH": 286, "NP": 223, "HR": 467, "RO": 683, "JO": 322, "CY": 320, "IS": 363, "SK": 417, "ID": 563, "AG": 71, "GE": 86, "KE": 248, "UG": 163, "UA": 260, "PH": 170, "EC": 219, "UY": 206, "TN": 233, "LU": 249, "TJ": 48, "MA": 207, "EE": 256, "GD": 52, "LK": 109, "KZ": 128, "BG": 230, "IQ": 234, "LT": 173, "AZ": 81, "CR": 86, "LV": 132, "BA": 98, "ZM": 71, "CM": 51, "OM": 162, "BY": 93, "KW": 135, "JM": 48, "TZ": 104, "MW": 81, "MT": 108, "AL": 29, "YE": 60, "BH": 72, "AM": 36, "ZW": 53, "SY": 41, "BF": 50, "ST": 13, "PA": 60, "BO": 49, "PY": 63, "RW": 40, "CU": 84, "BN": 50, "RE": 16, "SD": 57, "AO": 19, "GM": 25, "GT": 56, "BW": 42, "DZ": 79, "MK": 98, "MZ": 31, "MC": 23, "MN": 70, "BJ": 33, "KN": 32, "PS": 67, "VE": 63, "NE": 18, "CD": 45, "MD": 57, "UZ": 32, "GW": 6, "GN": 17, "DO": 17, "SN": 25, "GL": 5, "GP": 8, "NI": 8, "KG": 28, "ML": 23, "NaN": 37, "TT": 26, "SS": 10, "BB": 20, "MQ": 12, "SL": 10, "MM": 22, "FO": 14, "FJ": 15, "CG": 15, "BI": 16, "MU": 20, "HN": 13, "MV": 8, "GF": 4, "JE": 17, "MG": 6, "BT": 10, "NC": 3, "PF": 12, "LA": 14, "LY": 9, "XK": 22, "PG": 9, "ME": 5, "HT": 4, "CI": 5, "SZ": 4, "TO": 3, "LC": 3, "GA": 9, "AF": 9, "SC": 3, "CV": 1, "CW": 1, "SV": 4, "SO": 8, "SB": 3, "TD": 5, "SX": 3, "FK": 1, "MR": 5, "BS": 13, "TG": 1, "KY": 2, "GY": 1, "VC": 1, "AD": 1, "SR": 2, "WS": 1};
+        
+        // Create choropleth map with Apple light colors
+        const locations = choroplethData.map(d => d.iso3);
+        const values = choroplethData.map(d => d.count);
+        const hoverText = choroplethData.map(d => 
+            '<b style="font-size:17px;">' + d.name + '</b><br>' +
+            '<span style="font-size:28px;font-weight:700;color:#007aff;">' + d.count.toLocaleString() + '</span><br>' +
+            '<span style="color:#86868b;font-size:13px;">collaborations</span>'
+        );
+        const customData = choroplethData.map(d => d.iso2);
+        
+        const mapData = [{
+            type: 'choropleth',
+            locations: locations,
+            z: values,
+            customdata: customData,
+            text: hoverText,
+            hovertemplate: '%{text}<extra></extra>',
+            colorscale: [
+                [0, '#f5f5f7'],
+                [0.15, '#34c759'],
+                [0.35, '#5ac8fa'],
+                [0.55, '#007aff'],
+                [0.75, '#af52de'],
+                [1, '#ff2d55']
+            ],
+            showscale: false,
+            marker: {
+                line: {
+                    color: '#ffffff',
+                    width: 1
+                }
+            }
+        }];
+        
+        const mapLayout = {
+            geo: {
+                showframe: false,
+                showcoastlines: true,
+                coastlinecolor: '#d2d2d7',
+                showland: true,
+                landcolor: '#f5f5f7',
+                showocean: true,
+                oceancolor: '#ffffff',
+                showlakes: true,
+                lakecolor: '#ffffff',
+                showcountries: true,
+                countrycolor: '#d2d2d7',
+                projection: {
+                    type: 'natural earth'
+                },
+                bgcolor: 'rgba(255,255,255,0)'
+            },
+            paper_bgcolor: 'rgba(255,255,255,0)',
+            plot_bgcolor: 'rgba(255,255,255,0)',
+            margin: { t: 0, b: 0, l: 0, r: 0 },
+            hoverlabel: {
+                bgcolor: 'rgba(255, 255, 255, 0.98)',
+                bordercolor: 'rgba(0,0,0,0.06)',
+                font: {
+                    family: 'Inter, -apple-system, sans-serif',
+                    size: 14,
+                    color: '#1d1d1f'
+                }
+            }
+        };
+        
+        const mapConfig = {
+            displayModeBar: true,
+            modeBarButtonsToRemove: ['select2d', 'lasso2d', 'toImage'],
+            displaylogo: false,
+            responsive: true
+        };
+        
+        Plotly.newPlot('choropleth-map', mapData, mapLayout, mapConfig);
+        
+        // Handle map clicks
+        document.getElementById('choropleth-map').on('plotly_click', function(data) {
+            if (data.points && data.points.length > 0) {
+                const iso3 = data.points[0].location;
+                const iso2 = iso3ToIso2[iso3];
+                if (iso2 && collaborations[iso2]) {
+                    drawNetwork(iso2);
+                }
+            }
+        });
+        
+        // Draw network visualization
+        function drawNetwork(centerCountry) {
+            const container = document.getElementById('network-container');
+            const title = document.getElementById('network-title');
+            const subtitle = document.getElementById('network-subtitle');
+            const statsPanel = document.getElementById('stats-panel');
+            const statsContent = document.getElementById('stats-content');
+            const legendPanel = document.getElementById('legend-panel');
+            const countryName = countryNames[centerCountry] || centerCountry;
+            
+            title.textContent = countryName;
+            subtitle.textContent = 'Top research partnerships';
+            
+            container.innerHTML = '<svg id="network-svg"></svg>';
+            const svg = d3.select('#network-svg');
+            
+            const rect = container.getBoundingClientRect();
+            const width = rect.width || 380;
+            const height = 380;
+            
+            svg.attr('width', width).attr('height', height);
+            
+            const collabs = collaborations[centerCountry] || {};
+            const sortedCollabs = Object.entries(collabs)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            if (sortedCollabs.length === 0) {
+                container.innerHTML = '<div class="network-placeholder"><div class="placeholder-text">No data available</div></div>';
+                statsPanel.style.display = 'none';
+                legendPanel.style.display = 'none';
+                return;
+            }
+            
+            // Show panels
+            statsPanel.style.display = 'block';
+            legendPanel.style.display = 'block';
+            
+            // Calculate statistics
+            const totalCollabs = Object.values(collabs).reduce((a, b) => a + b, 0);
+            const numPartners = Object.keys(collabs).length;
+            const topPartner = sortedCollabs[0];
+            
+            statsContent.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-label">
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        Total Collaborations
+                    </div>
+                    <div class="stat-value accent">${totalCollabs.toLocaleString()}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                        Partner Countries
+                    </div>
+                    <div class="stat-value">${numPartners}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                        Top Partner
+                    </div>
+                    <div class="stat-value">${countryNames[topPartner[0]] || topPartner[0]}</div>
+                </div>
+            `;
+            
+            // Build nodes and links
+            const nodes = [{
+                id: centerCountry,
+                name: countryName,
+                isCenter: true,
+                total: totalCollabs
+            }];
+            
+            const links = [];
+            const maxWeight = Math.max(...sortedCollabs.map(c => c[1]));
+            const minWeight = Math.min(...sortedCollabs.map(c => c[1]));
+            
+            sortedCollabs.forEach(function(item) {
+                const country = item[0];
+                const weight = item[1];
+                nodes.push({
+                    id: country,
+                    name: countryNames[country] || country,
+                    isCenter: false,
+                    total: countryCounts[country] || weight,
+                    weight: weight
+                });
+                links.push({
+                    source: centerCountry,
+                    target: country,
+                    weight: weight
+                });
+            });
+            
+            // Apple light color scale for edges
+            const colorScale = d3.scaleLinear()
+                .domain([minWeight, (minWeight + maxWeight) / 2, maxWeight])
+                .range(['#34c759', '#5ac8fa', '#ff2d55']);
+            
+            const widthScale = d3.scaleLinear()
+                .domain([minWeight, maxWeight])
+                .range([2, 6]);
+            
+            const nodeScale = d3.scaleSqrt()
+                .domain([0, Math.max(...nodes.map(n => n.total))])
+                .range([14, 32]);
+            
+            // Create force simulation
+            const simulation = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(links).id(d => d.id).distance(90))
+                .force('charge', d3.forceManyBody().strength(-300))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(d => nodeScale(d.total) + 10));
+            
+            // Add subtle shadow filter
+            const defs = svg.append('defs');
+            
+            const shadowFilter = defs.append('filter')
+                .attr('id', 'shadow')
+                .attr('x', '-50%')
+                .attr('y', '-50%')
+                .attr('width', '200%')
+                .attr('height', '200%');
+            
+            shadowFilter.append('feDropShadow')
+                .attr('dx', '0')
+                .attr('dy', '2')
+                .attr('stdDeviation', '4')
+                .attr('flood-color', 'rgba(0, 122, 255, 0.25)');
+            
+            // Draw links
+            const link = svg.append('g')
+                .selectAll('line')
+                .data(links)
+                .enter()
+                .append('line')
+                .attr('class', 'link')
+                .attr('stroke', d => colorScale(d.weight))
+                .attr('stroke-width', d => widthScale(d.weight))
+                .attr('stroke-opacity', 0.7);
+            
+            // Draw nodes
+            const node = svg.append('g')
+                .selectAll('.node')
+                .data(nodes)
+                .enter()
+                .append('g')
+                .attr('class', d => d.isCenter ? 'node center' : 'node')
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended));
+            
+            node.append('circle')
+                .attr('r', d => nodeScale(d.total))
+                .attr('fill', d => d.isCenter ? '#007aff' : '#af52de')
+                .attr('stroke', '#ffffff')
+                .attr('stroke-width', 3)
+                .style('filter', d => d.isCenter ? 'url(#shadow)' : 'none');
+            
+            node.append('text')
+                .attr('dy', 4)
+                .attr('text-anchor', 'middle')
+                .text(d => d.id)
+                .style('font-size', d => d.isCenter ? '12px' : '10px');
+            
+            // Tooltip
+            const tooltip = d3.select('#tooltip');
+            
+            node.on('mouseover', function(event, d) {
+                let html;
+                if (d.isCenter) {
+                    html = `
+                        <div class="tooltip-title">${d.name}</div>
+                        <div class="tooltip-value">${d.total.toLocaleString()}</div>
+                        <div class="tooltip-label">total collaborations</div>
+                    `;
+                } else {
+                    html = `
+                        <div class="tooltip-title">${d.name}</div>
+                        <div class="tooltip-value">${d.weight.toLocaleString()}</div>
+                        <div class="tooltip-label">collaborations with ${countryName}</div>
+                    `;
+                }
+                tooltip.style('display', 'block').html(html);
+            })
+            .on('mousemove', function(event) {
+                tooltip.style('left', (event.pageX + 15) + 'px')
+                    .style('top', (event.pageY - 10) + 'px');
+            })
+            .on('mouseout', function() {
+                tooltip.style('display', 'none');
+            })
+            .on('click', function(event, d) {
+                if (!d.isCenter && collaborations[d.id]) {
+                    drawNetwork(d.id);
+                }
+            });
+            
+            link.on('mouseover', function(event, d) {
+                const sourceName = countryNames[d.source.id] || d.source.id;
+                const targetName = countryNames[d.target.id] || d.target.id;
+                tooltip.style('display', 'block')
+                    .html(`
+                        <div class="tooltip-title">${sourceName} ↔ ${targetName}</div>
+                        <div class="tooltip-value">${d.weight.toLocaleString()}</div>
+                        <div class="tooltip-label">collaborations</div>
+                    `);
+            })
+            .on('mousemove', function(event) {
+                tooltip.style('left', (event.pageX + 15) + 'px')
+                    .style('top', (event.pageY - 10) + 'px');
+            })
+            .on('mouseout', function() {
+                tooltip.style('display', 'none');
+            });
+            
+            simulation.on('tick', function() {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+                
+                node.attr('transform', d => 'translate(' + d.x + ',' + d.y + ')');
+            });
+            
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+            
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+            
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+        }
+    </script>
+</body>
+</html>
